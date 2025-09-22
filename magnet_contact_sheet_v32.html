@@ -269,7 +269,7 @@
                 <span class="slider"></span>
               </label>
             </div>
-            <p style="font-size: 0.8em; color: #555; margin: 0 0 10px 0;">Applies Brightness (+5), Blue Adjustment (-10), and Auto Levels.</p>
+            <p style="font-size: 0.8em; color: #555; margin: 0 0 10px 0;">Applies Brightness (+5), Blue Adjustment (-5), and Auto Levels.</p>
             <div class="checkbox-item toggle-container">
               <label id="backgroundLabel">Background: 
                 <span id="whiteStateLabel">White</span> / <span id="blackStateLabel">Black</span>
@@ -823,7 +823,7 @@
         if (images[index]) {
           const adj = individualAdjustments[index];
           const brightnessFactor = adj.brightness ? 1.05 : 1.0;
-          const blueAdjustment = adj.blueAdjustment ? -10 : 0;
+          const blueAdjustment = adj.blueAdjustment ? -5 : 0;
           const autoLevels = adj.autoLevels;
           const adjustedImage = adjustImage(images[index].img, 660, brightnessFactor, blueAdjustment, autoLevels);
           const offset = (size - photoSize) / 2;
@@ -866,7 +866,7 @@
         if (image) {
           const adj = individualAdjustments[index];
           const brightnessFactor = adj.brightness ? 1.05 : 1.0;
-          const blueAdjustment = adj.blueAdjustment ? -10 : 0;
+          const blueAdjustment = adj.blueAdjustment ? -5 : 0;
           const autoLevels = adj.autoLevels;
           const adjustedImage = adjustImage(image.img, 660, brightnessFactor, blueAdjustment, autoLevels);
           const offset = (size - photoSize) / 2;
