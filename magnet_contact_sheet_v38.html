@@ -1,0 +1,1127 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex));
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teddy's Magnets - 2"x2" Magnets Contact Sheet V37</title>
+  <meta name="icon" content="data:," />
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .container { max-width: 1500px; margin: 0 auto; }
+    .toolbar { display: block; gap: 20px; align-items: center; padding: 5px 0; border: none; }
+    .preview { border: 1px solid #ccc; margin-bottom: 20px; }
+    .layer-panel { width: 819px; border: 1px solid #ccc; padding: 10px; }
+    .left-panel { display: flex; flex-direction: column; gap: 15px; width: 500px; }
+    canvas { border: 1px solid #000; }
+    button { padding: 15px 30px; cursor: pointer; font-size: 18px; }
+    #downloadButton { background-color: #007bff; color: white; border: none; border-radius: 4px; }
+    #downloadButton:disabled { background-color: #cccccc; cursor: not-allowed; }
+    #clearButton { background-color: #007bff; color: white; border: none; border-radius: 4px; padding: 10px 20px; font-size: 14px; }
+    #contactSheetPreview { width: 819px; height: 792px; }
+    #contactSheetCanvas { display: none; }
+    .drop-zone {
+      border: 2px dashed #ccc;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+    }
+    .drop-zone.dragover {
+      background-color: #e1e1e1;
+      border-color: #999;
+    }
+    #adjustmentLabels {
+      margin-bottom: 10px;
+      font-style: italic;
+      color: #555;
+    }
+    #customNameInput {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px;
+    }
+    #filenamePreview {
+      margin-top: 5px;
+      font-size: 0.9em;
+      color: #888;
+    }
+    .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toolbar-title-group {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+    .toolbar-title-group h2 {
+        margin: 0;
+    }
+    .clear-adjustments-btn {
+        background: none;
+        border: 1px solid #ccc;
+        color: #555;
+        padding: 5px 10px;
+        font-size: 12px;
+        cursor: pointer;
+        border-radius: 4px;
+    }
+    .clear-adjustments-btn:hover {
+        background-color: #f0f0f0;
+    }
+    .layer-panel h2 {
+        padding-top: 5px;
+        padding-bottom: 5px;
+        margin: 0;
+    }
+
+    /* Toggle Switch Styles */
+    .toggle-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 20px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 20px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #2196F3;
+    }
+    input:focus + .slider {
+      box-shadow: 0 0 1px #2196F3;
+    }
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+    .grayed-out-text {
+        color: #888;
+    }
+
+    /* Individual Adjustments Grid Styles */
+    .adjustment-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .adjustment-cell {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .adjustment-cell p {
+      margin: 0 0 10px 0;
+      font-size: 0.8em;
+      font-weight: bold;
+    }
+    .adjustment-cell .toggle-container {
+      width: 100%;
+      margin-bottom: 5px;
+    }
+    .adjustment-cell label {
+      font-size: 0.8em;
+    }
+    /* Expand/Collapse styles */
+    .collapsible-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      padding: 10px 0;
+      border-top: 1px solid #000;
+      border-bottom: 1px solid #000;
+      margin-top: 5px;
+    }
+    .collapsible-header:first-child {
+        margin-top: 0;
+    }
+    .collapsible-content {
+      max-height: 650px;
+      overflow: hidden;
+      transition: max-height 0.3s ease-in-out;
+    }
+    .collapsible-content.collapsed {
+      max-height: 0;
+    }
+    .collapse-arrow {
+      transition: transform 0.3s ease-in-out;
+    }
+    .collapse-arrow.collapsed {
+      transform: rotate(-90deg);
+    }
+    .loading-spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <h2>Teddy's Magnets - 2"x2" Magnets Contact Sheet V37</h2>
+  <div class="container" style="margin: 0;">
+    <div style="display: flex; gap: 20px; align-items: flex-start; margin: 10px 0;">
+      <div class="left-panel">
+        <div class="collapsible-header" onclick="toggleUploadSection()">
+          <b>File Uploads</b>
+          <span id="uploadArrow" class="collapse-arrow">&#9660;</span>
+        </div>
+        <div id="uploadContent" class="collapsible-content">
+          <div class="toolbar">
+            <div>
+              <label for="imageUpload">Choose 9 Images:</label>
+              <input type="file" id="imageUpload" accept="image/*" multiple>
+            </div>
+            <div class="drop-zone" id="imageDropZone">
+              <p>Drag and drop images or a folder here</p>
+              <p class="text-sm text-gray-400 mt-2">
+                (Looks for images in a sub-folder called 'Originals')
+              </p>
+              <div id="loading-spinner" class="loading-spinner hidden"></div>
+            </div>
+            <div id="image-list" class="mt-4 text-left hidden">
+                <p class="text-sm font-medium text-gray-700">Found Images:</p>
+                <ul id="imageList" class="mt-1 text-gray-600 space-y-1">
+                </ul>
+            </div>
+          </div>
+        </div>
+        <div class="collapsible-header" onclick="toggleIndividualAdjustments()">
+            <b>Image Adjustments</b>
+            <span id="individualAdjustmentsArrow" class="collapse-arrow collapsed">&#9660;</span>
+        </div>
+        <div id="individualAdjustmentsContent" class="collapsible-content collapsed">
+            <div class="checkbox-group">
+                <div class="checkbox-item toggle-container" style="margin-top: 10px; margin-bottom: 5px;">
+                  <label for="recommendedCheckbox" style="font-weight: bold;">Brighten All Images +10</label>
+                  <label class="switch">
+                    <input type="checkbox" id="recommendedCheckbox" onchange="updateGlobalRecommendedCheckboxes()">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
+            <div class="toolbar">
+                <div class="adjustment-grid">
+                    <div class="adjustment-cell">
+                        <p>Image 1</p>
+                        <div class="toggle-container">
+                            <label>Brightness</label>
+                            <label class="switch">
+                                <input type="checkbox" id="brightness-0" onchange="updatePreviews();">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Auto Levels Full</label>
+                            <label class="switch">
+                                <input type="checkbox" id="autoLevelsFull-0" onchange="handleAutoLevelsToggle(0, 'full');">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Auto Levels 1/2</label>
+                            <label class="switch">
+                                <input type="checkbox" id="autoLevelsHalf-0" onchange="handleAutoLevelsToggle(0, 'half');">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Blue</label>
+                            <label class="switch">
+                                <input type="checkbox" id="blueAdjustment-0" onchange="updatePreviews();">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="adjustment-cell">
+                        <p>Image 2</p>
+                        <div class="toggle-container">
+                            <label>Brightness</label>
+                            <label class="switch">
+                                <input type="checkbox" id="brightness-1" onchange="updatePreviews();">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Auto Levels Full</label>
+                            <label class="switch">
+                                <input type="checkbox" id="autoLevelsFull-1" onchange="handleAutoLevelsToggle(1, 'full');">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Auto Levels 1/2</label>
+                            <label class="switch">
+                                <input type="checkbox" id="autoLevelsHalf-1" onchange="handleAutoLevelsToggle(1, 'half');">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Blue</label>
+                            <label class="switch">
+                                <input type="checkbox" id="blueAdjustment-1" onchange="updatePreviews();">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="adjustment-cell">
+                        <p>Image 3</p>
+                        <div class="toggle-container">
+                            <label>Brightness</label>
+                            <label class="switch">
+                                <input type="checkbox" id="brightness-2" onchange="updatePreviews();">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Auto Levels Full</label>
+                            <label class="switch">
+                                <input type="checkbox" id="autoLevelsFull-2" onchange="handleAutoLevelsToggle(2, 'full');">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Auto Levels 1/2</label>
+                            <label class="switch">
+                                <input type="checkbox" id="autoLevelsHalf-2" onchange="handleAutoLevelsToggle(2, 'half');">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Blue</label>
+                            <label class="switch">
+                                <input type="checkbox" id="blueAdjustment-2" onchange="updatePreviews();">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="adjustment-cell">
+                        <p>Image 4</p>
+                        <div class="toggle-container">
+                            <label>Brightness</label>
+                            <label class="switch">
+                                <input type="checkbox" id="brightness-3" onchange="updatePreviews();">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Auto Levels Full</label>
+                            <label class="switch">
+                                <input type="checkbox" id="autoLevelsFull-3" onchange="handleAutoLevelsToggle(3, 'full');">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Auto Levels 1/2</label>
+                            <label class="switch">
+                                <input type="checkbox" id="autoLevelsHalf-3" onchange="handleAutoLevelsToggle(3, 'half');">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Blue</label>
+                            <label class="switch">
+                                <input type="checkbox" id="blueAdjustment-3" onchange="updatePreviews();">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="adjustment-cell">
+                        <p>Image 5</p>
+                        <div class="toggle-container">
+                            <label>Brightness</label>
+                            <label class="switch">
+                                <input type="checkbox" id="brightness-4" onchange="updatePreviews();">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Auto Levels Full</label>
+                            <label class="switch">
+                                <input type="checkbox" id="autoLevelsFull-4" onchange="handleAutoLevelsToggle(4, 'full');">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Auto Levels 1/2</label>
+                            <label class="switch">
+                                <input type="checkbox" id="autoLevelsHalf-4" onchange="handleAutoLevelsToggle(4, 'half');">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Blue</label>
+                            <label class="switch">
+                                <input type="checkbox" id="blueAdjustment-4" onchange="updatePreviews();">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="adjustment-cell">
+                        <p>Image 6</p>
+                        <div class="toggle-container">
+                            <label>Brightness</label>
+                            <label class="switch">
+                                <input type="checkbox" id="brightness-5" onchange="updatePreviews();">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Auto Levels Full</label>
+                            <label class="switch">
+                                <input type="checkbox" id="autoLevelsFull-5" onchange="handleAutoLevelsToggle(5, 'full');">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Auto Levels 1/2</label>
+                            <label class="switch">
+                                <input type="checkbox" id="autoLevelsHalf-5" onchange="handleAutoLevelsToggle(5, 'half');">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Blue</label>
+                            <label class="switch">
+                                <input type="checkbox" id="blueAdjustment-5" onchange="updatePreviews();">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="adjustment-cell">
+                        <p>Image 7</p>
+                        <div class="toggle-container">
+                            <label>Brightness</label>
+                            <label class="switch">
+                                <input type="checkbox" id="brightness-6" onchange="updatePreviews();">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Auto Levels Full</label>
+                            <label class="switch">
+                                <input type="checkbox" id="autoLevelsFull-6" onchange="handleAutoLevelsToggle(6, 'full');">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Auto Levels 1/2</label>
+                            <label class="switch">
+                                <input type="checkbox" id="autoLevelsHalf-6" onchange="handleAutoLevelsToggle(6, 'half');">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Blue</label>
+                            <label class="switch">
+                                <input type="checkbox" id="blueAdjustment-6" onchange="updatePreviews();">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="adjustment-cell">
+                        <p>Image 8</p>
+                        <div class="toggle-container">
+                            <label>Brightness</label>
+                            <label class="switch">
+                                <input type="checkbox" id="brightness-7" onchange="updatePreviews();">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Auto Levels Full</label>
+                            <label class="switch">
+                                <input type="checkbox" id="autoLevelsFull-7" onchange="handleAutoLevelsToggle(7, 'full');">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Auto Levels 1/2</label>
+                            <label class="switch">
+                                <input type="checkbox" id="autoLevelsHalf-7" onchange="handleAutoLevelsToggle(7, 'half');">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Blue</label>
+                            <label class="switch">
+                                <input type="checkbox" id="blueAdjustment-7" onchange="updatePreviews();">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="adjustment-cell">
+                        <p>Image 9</p>
+                        <div class="toggle-container">
+                            <label>Brightness</label>
+                            <label class="switch">
+                                <input type="checkbox" id="brightness-8" onchange="updatePreviews();">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Auto Levels Full</label>
+                            <label class="switch">
+                                <input type="checkbox" id="autoLevelsFull-8" onchange="handleAutoLevelsToggle(8, 'full');">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Auto Levels 1/2</label>
+                            <label class="switch">
+                                <input type="checkbox" id="autoLevelsHalf-8" onchange="handleAutoLevelsToggle(8, 'half');">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-container">
+                            <label>Blue</label>
+                            <label class="switch">
+                                <input type="checkbox" id="blueAdjustment-8" onchange="updatePreviews();">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="toolbar">
+          <b>File Name Settings</b>
+          <input type="text" id="customNameInput" placeholder="enter custom name" oninput="updatePreviews()">
+          <div id="filenamePreview"></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start;">
+          <button id="downloadButton" onclick="confirmDownload()" disabled style="display: flex; align-items: center; justify-content: center; gap: 5px; padding: 10px 20px; font-size: 14px; width: 100%;">
+            <span style="font-size: 20px; line-height: 1;">&darr;</span> Download Contact Sheet
+          </button>
+          <button id="clearButton" onclick="clearAll()" style="display: flex; align-items: center; justify-content: center; gap: 5px; background-color: #f0f0f0; color: #555; border: 1px solid #ccc; border-radius: 4px; padding: 10px 20px; font-size: 14px; width: 100%;">
+            <span style="font-size: 20px; line-height: 1;">&times;</span> Clear All
+          </button>
+        </div>
+      </div>
+      <div class="layer-panel">
+        <h2>Contact Sheet Preview</h2>
+        <canvas id="contactSheetPreview" width="819" height="792"></canvas>
+      </div>
+    </div>
+    <canvas id="contactSheetCanvas" width="2550" height="3300"></canvas>
+  </div>
+
+  <script>
+    const contactSheetCanvas = document.getElementById('contactSheetCanvas');
+    const contactSheetCtx = contactSheetCanvas.getContext('2d');
+    const contactSheetPreview = document.getElementById('contactSheetPreview');
+    const previewCtx = contactSheetPreview.getContext('2d');
+    const recommendedCheckbox = document.getElementById('recommendedCheckbox');
+    const customNameInput = document.getElementById('customNameInput');
+    const filenamePreview = document.getElementById('filenamePreview');
+    const downloadButton = document.getElementById('downloadButton');
+    const uploadContent = document.getElementById('uploadContent');
+    const uploadArrow = document.getElementById('uploadArrow');
+    const individualAdjustmentsContent = document.getElementById('individualAdjustmentsContent');
+    const individualAdjustmentsArrow = document.getElementById('individualAdjustmentsArrow');
+    const imageListElement = document.getElementById('imageList');
+    const imageListContainer = document.getElementById('image-list');
+    const loadingSpinner = document.getElementById('loading-spinner');
+    let images = [];
+    let backgroundImage = new Image();
+    let individualAdjustments = [];
+
+    // Auto-load the border image from the specified URL
+    function loadDefaultBorderImage() {
+      backgroundImage.crossOrigin = "anonymous";
+      backgroundImage.onload = () => {
+        updatePreviews();
+      };
+      backgroundImage.onerror = () => {
+        console.warn('Could not load default border image from URL');
+      };
+      backgroundImage.src = 'https://cdn.shopify.com/s/files/1/0648/6209/3510/files/Teddys_Magnets_2.75x2.75_octaganal_magnets_border_with_url.png?v=1757688444';
+    }
+
+    function initIndividualAdjustments() {
+        individualAdjustments = Array(9).fill(null).map(() => ({
+            brightness: false,
+            blueAdjustment: false,
+            autoLevelsFull: false,
+            autoLevelsHalf: false
+        }));
+    }
+    
+    function updateAllCheckboxes(adjustment, checked) {
+        for (let i = 0; i < 9; i++) {
+            const checkbox = document.getElementById(`${adjustment}-${i}`);
+            if (checkbox) {
+                checkbox.checked = checked;
+                individualAdjustments[i][adjustment] = checked;
+            }
+        }
+        updatePreviews();
+    }
+
+    function updateGlobalRecommendedCheckboxState() {
+        const allRecommended = individualAdjustments.every(adj => adj.brightness);
+        recommendedCheckbox.checked = allRecommended;
+    }
+
+    function updateGlobalRecommendedCheckboxes() {
+        const checked = recommendedCheckbox.checked;
+        updateAllCheckboxes('brightness', checked);
+        updatePreviews();
+    }
+
+    function toggleUploadSection() {
+        uploadContent.classList.toggle('collapsed');
+        uploadArrow.classList.toggle('collapsed');
+    }
+    
+    function toggleIndividualAdjustments() {
+        individualAdjustmentsContent.classList.toggle('collapsed');
+        individualAdjustmentsArrow.classList.toggle('collapsed');
+    }
+
+    function checkAndCollapse() {
+        if (images.length > 0 && backgroundImage.src) {
+            uploadContent.classList.add('collapsed');
+            uploadArrow.classList.add('collapsed');
+        }
+    }
+
+    const imageDropZone = document.getElementById('imageDropZone');
+    // Prevent default behavior for drag and drop events
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        imageDropZone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    // Highlight drop zone on drag enter/over
+    imageDropZone.addEventListener('dragenter', () => imageDropZone.classList.add('dragover'), false);
+    imageDropZone.addEventListener('dragleave', () => imageDropZone.classList.remove('dragover'), false);
+    imageDropZone.addEventListener('dragover', () => imageDropZone.classList.add('dragover'), false);
+
+    imageDropZone.addEventListener('drop', handleDrop, false);
+
+    function showLoading() {
+        loadingSpinner.classList.remove('hidden');
+    }
+
+    function hideLoading() {
+        loadingSpinner.classList.add('hidden');
+    }
+
+    async function handleDrop(e) {
+        const items = e.dataTransfer.items;
+        if (!items || items.length === 0) return;
+
+        showLoading();
+
+        let droppedFolderEntry = null;
+        let droppedFiles = [];
+
+        for (let i = 0; i < items.length; i++) {
+            const entry = items[i].webkitGetAsEntry();
+            if (entry) {
+                if (entry.isDirectory) {
+                    droppedFolderEntry = entry;
+                } else if (entry.isFile) {
+                    const file = items[i].getAsFile();
+                    if (file) {
+                        droppedFiles.push(file);
+                    }
+                }
+            }
+        }
+        
+        if (droppedFolderEntry) {
+            const originalFiles = [];
+            try {
+                const folderName = droppedFolderEntry.name;
+                customNameInput.value = folderName;
+                await scanDirectory(droppedFolderEntry, 'Originals', originalFiles);
+                handleImageFiles(originalFiles);
+            } catch (error) {
+                console.error('Error processing folder:', error);
+                hideLoading();
+                // This is a custom error message, so no need for a modal here
+            }
+        } else {
+            handleImageFiles(droppedFiles);
+        }
+    }
+
+    function isImageFile(file) {
+        return file.type.startsWith('image/');
+    }
+
+    function scanDirectory(directoryEntry, subfolderName, foundFiles) {
+        return new Promise((resolve, reject) => {
+            const directoryReader = directoryEntry.createReader();
+            directoryReader.readEntries(async (entries) => {
+                try {
+                    for (const entry of entries) {
+                        if (entry.isDirectory && entry.name === subfolderName) {
+                            await getFilesInDirectory(entry, foundFiles);
+                        }
+                    }
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            }, (error) => {
+                reject(error);
+            });
+        });
+    }
+
+    function getFilesInDirectory(directoryEntry, foundFiles) {
+        return new Promise((resolve, reject) => {
+            const directoryReader = directoryEntry.createReader();
+            directoryReader.readEntries(async (entries) => {
+                try {
+                    for (const entry of entries) {
+                        if (entry.isFile) {
+                            const file = await getFile(entry);
+                            if (isImageFile(file)) {
+                                foundFiles.push(file);
+                            }
+                        }
+                    }
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            }, (error) => {
+                reject(error);
+            });
+        });
+    }
+
+    function getFile(fileEntry) {
+        return new Promise((resolve, reject) => {
+            fileEntry.file(file => resolve(file), err => reject(err));
+        });
+    }
+
+    function handleImageFiles(files) {
+      if (files.length === 0) {
+        hideLoading();
+        return;
+      }
+      
+      const filesToLoad = Array.from(files).filter(file => file.type.startsWith('image/')).slice(0, 9);
+      let loadedCount = 0;
+      images = [];
+      imageListElement.innerHTML = '';
+      
+      filesToLoad.forEach((file, index) => {
+        const img = new Image();
+        img.onload = () => {
+          images[index] = { img, x: 0, y: 0, width: img.width, height: img.height };
+          loadedCount++;
+          if (loadedCount === filesToLoad.length) {
+            downloadButton.disabled = images.length < 1;
+            checkAndCollapse();
+            if (images.length === 9) {
+                recommendedCheckbox.checked = true;
+                updateGlobalRecommendedCheckboxes();
+                individualAdjustmentsContent.classList.remove('collapsed');
+                individualAdjustmentsArrow.classList.remove('collapsed');
+            }
+            updatePreviews();
+            hideLoading();
+            showFoundFiles(filesToLoad);
+          }
+        };
+        img.onerror = () => {
+          console.error(`Error loading image ${file.name}`);
+          loadedCount++;
+          if (loadedCount === filesToLoad.length) {
+            downloadButton.disabled = images.length < 1;
+            updatePreviews();
+            hideLoading();
+          }
+        };
+        img.src = URL.createObjectURL(file);
+      });
+      if (filesToLoad.length === 0) {
+          hideLoading();
+      }
+    }
+
+    const imageUpload = document.getElementById('imageUpload');
+    imageUpload.addEventListener('change', (e) => handleImageFiles(e.target.files));
+
+    function showFoundFiles(files) {
+        if (files.length > 0) {
+            imageListContainer.classList.remove('hidden');
+            imageListElement.innerHTML = files.map(file => `<li>${file.name}</li>`).join('');
+        }
+    }
+
+    function initCanvases() {
+      contactSheetCtx.fillStyle = '#fff';
+      contactSheetCtx.fillRect(0, 0, 2550, 3300);
+      previewCtx.fillStyle = '#fff';
+      previewCtx.fillRect(0, 0, 819, 792);
+    }
+
+    function adjustImage(image, targetSize, brightnessFactor, blueAdjustment, autoLevelsFull, autoLevelsHalf) {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = targetSize;
+      tempCanvas.height = targetSize;
+      const tempCtx = tempCanvas.getContext('2d');
+      
+      let sourceX = 0;
+      let sourceY = 0;
+      let sourceWidth = image.width;
+      let sourceHeight = image.height;
+      
+      const imageAspectRatio = image.width / image.height;
+      if (imageAspectRatio > 1) {
+          sourceWidth = image.height;
+          sourceX = (image.width - sourceWidth) / 2;
+      } else if (imageAspectRatio < 1) {
+          sourceHeight = image.width;
+          sourceY = (image.height - sourceHeight) / 2;
+      }
+
+      tempCtx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, targetSize, targetSize);
+      
+      let imageData = tempCtx.getImageData(0, 0, targetSize, targetSize);
+      let data = imageData.data;
+      let originalData = new Uint8ClampedArray(data);
+
+      let levelFactor = 0;
+      if (autoLevelsFull) {
+          levelFactor = 1;
+      } else if (autoLevelsHalf) {
+          levelFactor = 0.5;
+      }
+
+      if (levelFactor > 0) {
+          let r_min = 255, r_max = 0;
+          let g_min = 255, g_max = 0;
+          let b_min = 255, b_max = 0;
+
+          for (let i = 0; i < data.length; i += 4) {
+              r_min = Math.min(r_min, data[i]);
+              r_max = Math.max(r_max, data[i]);
+              g_min = Math.min(g_min, data[i + 1]);
+              g_max = Math.max(g_max, data[i + 1]);
+              b_min = Math.min(b_min, data[i + 2]);
+              b_max = Math.max(b_max, data[i + 2]);
+          }
+
+          for (let i = 0; i < data.length; i += 4) {
+              let r_full = (originalData[i] - r_min) * (255 / (r_max - r_min));
+              let g_full = (originalData[i + 1] - g_min) * (255 / (g_max - g_min));
+              let b_full = (originalData[i + 2] - b_min) * (255 / (b_max - b_min));
+              
+              data[i] = originalData[i] + (r_full - originalData[i]) * levelFactor;
+              data[i + 1] = originalData[i + 1] + (g_full - originalData[i + 1]) * levelFactor;
+              data[i + 2] = originalData[i + 2] + (b_full - originalData[i + 2]) * levelFactor;
+          }
+      }
+
+      for (let i = 0; i < data.length; i += 4) {
+        data[i] = Math.min(255, data[i] * brightnessFactor);
+        data[i + 1] = Math.min(255, data[i + 1] * brightnessFactor);
+        data[i + 2] = Math.max(0, data[i + 2] * brightnessFactor + blueAdjustment);
+      }
+      
+      tempCtx.putImageData(imageData, 0, 0);
+      return tempCanvas;
+    }
+
+    function handleAutoLevelsToggle(index, type) {
+        if (type === 'full') {
+            document.getElementById(`autoLevelsHalf-${index}`).checked = false;
+        } else if (type === 'half') {
+            document.getElementById(`autoLevelsFull-${index}`).checked = false;
+        }
+        updatePreviews();
+    }
+
+    function updatePreviews() {
+      for (let i = 0; i < 9; i++) {
+          individualAdjustments[i].brightness = document.getElementById(`brightness-${i}`).checked;
+          individualAdjustments[i].blueAdjustment = document.getElementById(`blueAdjustment-${i}`).checked;
+          individualAdjustments[i].autoLevelsFull = document.getElementById(`autoLevelsFull-${i}`).checked;
+          individualAdjustments[i].autoLevelsHalf = document.getElementById(`autoLevelsHalf-${i}`).checked;
+      }
+      drawContactSheetPreview();
+      updateFilenamePreview();
+      updateGlobalRecommendedCheckboxState();
+    }
+
+    function drawContactSheetPreview() {
+      previewCtx.fillStyle = '#fff';
+      previewCtx.fillRect(0, 0, 819, 792);
+      const marginTop = 74.25;
+      const hSpacing = 15.5;
+      const vSpacing = 34.1;
+      const size = 198;
+      const photoSize = 158;
+      const marginSide = (819 - (3 * size + 2 * hSpacing)) / 2;
+      const positions = [
+        [marginSide, marginTop],
+        [marginSide + size + hSpacing, marginTop],
+        [marginSide + 2 * size + 2 * hSpacing, marginTop],
+        [marginSide, marginTop + size + vSpacing],
+        [marginSide + size + hSpacing, marginTop + size + vSpacing],
+        [marginSide + 2 * size + 2 * hSpacing, marginTop + size + vSpacing],
+        [marginSide, marginTop + 2 * size + 2 * vSpacing],
+        [marginSide + size + hSpacing, marginTop + 2 * size + 2 * vSpacing],
+        [marginSide + 2 * size + 2 * hSpacing, marginTop + 2 * size + 2 * vSpacing]
+      ];
+      
+      positions.forEach((pos, index) => {
+        if (backgroundImage.complete && backgroundImage.src) {
+          previewCtx.drawImage(backgroundImage, pos[0], pos[1], size, size);
+        } else {
+          previewCtx.fillStyle = '#e0e0e0';
+          previewCtx.fillRect(pos[0], pos[1], size, size);
+        }
+
+        if (images[index]) {
+          const adj = individualAdjustments[index];
+          const brightnessFactor = adj.brightness ? 1.10 : 1.0;
+          const blueAdjustment = adj.blueAdjustment ? -5 : 0;
+          const adjustedImage = adjustImage(images[index].img, 660, brightnessFactor, blueAdjustment, adj.autoLevelsFull, adj.autoLevelsHalf);
+          const offset = (size - photoSize) / 2;
+          previewCtx.drawImage(adjustedImage, pos[0] + offset, pos[1] + offset, photoSize, photoSize);
+        }
+      });
+      
+      const previewFilename = generateFilename();
+      previewCtx.fillStyle = '#000';
+      previewCtx.font = 'bold 10px Arial';
+      previewCtx.textAlign = 'center';
+      previewCtx.fillText(previewFilename, contactSheetPreview.width / 2, 40);
+    }
+
+    function generateContactSheet() {
+      contactSheetCtx.fillStyle = '#fff';
+      contactSheetCtx.fillRect(0, 0, 2550, 3300);
+      const marginTop = 309.5;
+      const hSpacing = 29.25;
+      const vSpacing = 141.9;
+      const size = 825;
+      const photoSize = 660;
+      const marginSide = (2550 - (3 * size + 2 * hSpacing)) / 2;
+      const positions = [
+        [marginSide, marginTop],
+        [marginSide + size + hSpacing, marginTop],
+        [marginSide + 2 * size + 2 * hSpacing, marginTop],
+        [marginSide, marginTop + size + vSpacing],
+        [marginSide + size + hSpacing, marginTop + size + vSpacing],
+        [marginSide + 2 * size + 2 * hSpacing, marginTop + size + vSpacing],
+        [marginSide, marginTop + 2 * size + 2 * vSpacing],
+        [marginSide + size + hSpacing, marginTop + 2 * size + 2 * vSpacing],
+        [marginSide + 2 * size + 2 * hSpacing, marginTop + 2 * size + 2 * vSpacing]
+      ];
+      
+      images.slice(0, 9).forEach((image, index) => {
+        if (backgroundImage.complete && backgroundImage.src) {
+          contactSheetCtx.drawImage(backgroundImage, positions[index][0], positions[index][1], size, size);
+        }
+        if (image) {
+          const adj = individualAdjustments[index];
+          const brightnessFactor = adj.brightness ? 1.10 : 1.0;
+          const blueAdjustment = adj.blueAdjustment ? -5 : 0;
+          const adjustedImage = adjustImage(image.img, 660, brightnessFactor, blueAdjustment, adj.autoLevelsFull, adj.autoLevelsHalf);
+          const offset = (size - photoSize) / 2;
+          contactSheetCtx.drawImage(adjustedImage, positions[index][0] + offset, positions[index][1] + offset, photoSize, photoSize);
+        }
+      });
+      
+      const filename = generateFilename();
+      contactSheetCtx.fillStyle = '#000';
+      contactSheetCtx.font = 'bold 40px Arial';
+      contactSheetCtx.textAlign = 'center';
+      const sheetWidth = 2550;
+      const textX = sheetWidth / 2;
+      contactSheetCtx.fillText(filename, textX, 150);
+    }
+
+    function generateFilename() {
+      const customName = customNameInput.value.trim();
+      const adjustments = [];
+      const isRecommended = recommendedCheckbox.checked;
+      const isCustom = individualAdjustments.some(adj =>
+          (adj.brightness !== isRecommended) ||
+          (adj.blueAdjustment !== false) ||
+          (adj.autoLevelsFull !== false) ||
+          (adj.autoLevelsHalf !== false)
+      );
+      
+      if (isCustom) {
+          adjustments.push("Custom Adjustments");
+      } else if (isRecommended) {
+          adjustments.push("Recommended");
+      } else {
+          adjustments.push("no adjustments");
+      }
+
+      let namePart = customName ? `${customName} ` : '';
+      let adjustmentsPart = adjustments.join(' ');
+      
+      return `${namePart}contact sheet ${adjustmentsPart}.png`;
+    }
+
+    function updateFilenamePreview() {
+      filenamePreview.textContent = `Filename: ${generateFilename()}`;
+    }
+
+    function confirmDownload() {
+      if (images.length > 0 && images.length < 9) {
+        if (confirm("The contact sheet is not complete, are you sure you want to download it?")) {
+          downloadContactSheet();
+        }
+      } else {
+        downloadContactSheet();
+      }
+    }
+
+    function downloadContactSheet() {
+      if (images.length === 0) {
+        console.error('Please upload at least 1 image to download.');
+        return;
+      }
+      try {
+        generateContactSheet();
+        setTimeout(() => {
+          const dataURL = contactSheetCanvas.toDataURL('image/png');
+          if (dataURL) {
+            const link = document.createElement('a');
+            link.download = generateFilename();
+            link.href = dataURL;
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(() => document.body.removeChild(link), 100);
+          } else {
+            throw new Error('Canvas dataURL is empty or invalid');
+          }
+        }, 100);
+      } catch (error) {
+        console.error('Error downloading contact sheet:', error);
+        console.error('Failed to download contact sheet. Ensure all images are uploaded and the border image is loaded.');
+      }
+    }
+
+    function clearAll() {
+      images = [];
+      document.getElementById('imageUpload').value = '';
+      customNameInput.value = '';
+      downloadButton.disabled = true;
+      imageListElement.innerHTML = '';
+      imageListContainer.classList.add('hidden');
+      
+      recommendedCheckbox.checked = false;
+      initIndividualAdjustments();
+      for (let i = 0; i < 9; i++) {
+          document.getElementById(`brightness-${i}`).checked = false;
+          document.getElementById(`blueAdjustment-${i}`).checked = false;
+          document.getElementById(`autoLevelsFull-${i}`).checked = false;
+          document.getElementById(`autoLevelsHalf-${i}`).checked = false;
+      }
+
+      uploadContent.classList.remove('collapsed');
+      uploadArrow.classList.remove('collapsed');
+      
+      initCanvases();
+      loadDefaultBorderImage();
+      updatePreviews();
+    }
+
+    // Initialize everything when the page loads
+    initIndividualAdjustments();
+    initCanvases();
+    loadDefaultBorderImage();
+    updatePreviews();
+  </script>
+</body>
+</html>
