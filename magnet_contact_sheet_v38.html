@@ -1067,30 +1067,63 @@
     }
 
     function downloadContactSheet() {
-      if (images.length === 0) {
-        console.error('Please upload at least 1 image to download.');
-        return;
-      }
-      try {
-        generateContactSheet();
-        setTimeout(() => {
-          const dataURL = contactSheetCanvas.toDataURL('image/png');
-          if (dataURL) {
-            const link = document.createElement('a');
-            link.download = generateFilename();
-            link.href = dataURL;
-            document.body.appendChild(link);
-            link.click();
-            setTimeout(() => document.body.removeChild(link), 100);
-          } else {
-            throw new Error('Canvas dataURL is empty or invalid');
-          }
-        }, 100);
-      } catch (error) {
-        console.error('Error downloading contact sheet:', error);
-        console.error('Failed to download contact sheet. Ensure all images are uploaded and the border image is loaded.');
-      }
-    }
+  // Find the main content container using its class.
+  // NOTE: This targets the element with class="container" which holds everything.
+  const elementToCapture = document.querySelector('.container'); 
+
+  if (!elementToCapture) {
+      console.error("Main content container not found.");
+      return;
+  }
+
+  // 1. SAVE original styles defined inline (will be empty if not set)
+  const originalInlineBoxShadow = elementToCapture.style.boxShadow;
+  const originalInlineMargin = elementToCapture.style.margin;
+
+  try {
+    // 2. TEMPORARILY REMOVE styles that show up as unwanted borders/backgrounds in the capture
+    elementToCapture.style.boxShadow = 'none';
+    elementToCapture.style.margin = '0'; 
+
+    // Use a slight delay to ensure the DOM updates take effect before html2canvas runs
+    setTimeout(() => {
+      html2canvas(elementToCapture, {
+        allowTaint: true,
+        useCORS: true,
+        // Ensure full element content is captured, adjusting scroll for its position
+        scrollY: -elementToCapture.offsetTop,
+        scrollX: -elementToCapture.offsetLeft,
+        windowWidth: elementToCapture.offsetWidth,
+        windowHeight: elementToCapture.offsetHeight
+      }).then(canvas => {
+        // 3. RESTORE original inline styles immediately after capture
+        elementToCapture.style.boxShadow = originalInlineBoxShadow;
+        elementToCapture.style.margin = originalInlineMargin; 
+        
+        const dataURL = canvas.toDataURL('image/png');
+        if (dataURL && dataURL !== 'data:,') {
+          const name = customNameInput.value.trim() || 'contact_sheet';
+          const link = document.createElement('a');
+          link.download = `${name}.png`;
+          link.href = dataURL;
+          document.body.appendChild(link);
+          link.click();
+          setTimeout(() => document.body.removeChild(link), 100);
+        } else {
+          throw new Error('Canvas dataURL is empty or invalid');
+        }
+      });
+    }, 100);
+  } catch (error) {
+    console.error('Error downloading contact sheet:', error);
+    console.error('Failed to download contact sheet. Ensure all images are uploaded and the border image is loaded.');
+    
+    // 4. RESTORE styles even if an error occurred before .then() block
+    elementToCapture.style.boxShadow = originalInlineBoxShadow;
+    elementToCapture.style.margin = originalInlineMargin; 
+  }
+}
+
 
     function clearAll() {
       images = [];
