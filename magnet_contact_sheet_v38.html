@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Teddy's Magnets - 2"x2" Magnets Contact Sheet Combined</title>
+  <title>Teddy's Magnets - 2"x2" Magnets Contact Sheet Combined V2</title>
   <meta name="icon" content="data:," />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -19,20 +19,20 @@
     #downloadButton { background-color: #007bff; color: white; border: none; border-radius: 4px; }
     #downloadButton:disabled { background-color: #cccccc; cursor: not-allowed; }
     #clearButton { background-color: #007bff; color: white; border: none; border-radius: 4px; padding: 10px 20px; font-size: 14px; }
-    #contactSheetPreview { width: 819px; height: 792px; }
-    #contactSheetCanvas { display: none; }
-    #customNameInput {
+    .contactSheetPreview { width: 819px; height: 792px; }
+    .contactSheetCanvas { display: none; }
+    .customNameInput {
       width: 100%;
       box-sizing: border-box;
       padding: 8px;
     }
-    #imageUrlInput {
+    .imageUrlInput {
       width: 100%;
       box-sizing: border-box;
       padding: 8px;
       min-height: 100px;
     }
-    #filenamePreview {
+    .filenamePreview {
       margin-top: 5px;
       font-size: 0.9em;
       color: #888;
@@ -204,311 +204,88 @@
     .thumbnail-image:hover {
         transform: scale(1.05);
     }
+    .contact-sheet-section {
+      border: 2px solid #ddd;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      background-color: #f9f9f9;
+    }
+    .contact-sheet-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .contact-sheet-header h3 {
+      margin: 0;
+      color: #333;
+    }
+    .remove-sheet-btn {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 5px 15px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .remove-sheet-btn:hover {
+      background-color: #c82333;
+    }
+    #addSheetButton {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 10px 20px;
+      font-size: 14px;
+      cursor: pointer;
+      width: 100%;
+      margin-bottom: 15px;
+    }
+    #addSheetButton:hover {
+      background-color: #218838;
+    }
+    .sheets-container {
+      display: flex;
+      gap: 20px;
+    }
+    .all-sheets-container {
+      flex: 1;
+    }
   </style>
 </head>
 <body>
-  <h2>Teddy's Magnets - 2"x2" Magnets Contact Sheet Combined</h2>
+  <h2>Teddy's Magnets - 2"x2" Magnets Contact Sheet Combined V2</h2>
   <div class="container" style="margin: 0;">
-    <div style="display: flex; gap: 20px; align-items: flex-start; margin: 10px 0;">
-      <div class="left-panel">
-        <div class="collapsible-header" onclick="toggleUploadSection()">
-          <b>Image URLs</b>
-          <span id="uploadArrow" class="collapse-arrow">&#9660;</span>
-        </div>
-        <div id="uploadContent" class="collapsible-content">
-          <div class="toolbar">
-            <div>
-              <label for="imageUrlInput">Paste Image URLs (comma-separated):</label>
-              <textarea id="imageUrlInput" placeholder="e.g., https://example.com/image1.jpg, https://example.com/image2.jpg" oninput="handleUrlInput()"></textarea>
-            </div>
-            <div id="thumbnail-preview" class="thumbnail-grid"></div>
-            <div id="loading-spinner" class="loading-spinner hidden"></div>
-          </div>
-        </div>
-        <div class="collapsible-header" onclick="toggleIndividualAdjustments()">
-            <b>Image Adjustments</b>
-            <span id="individualAdjustmentsArrow" class="collapse-arrow collapsed">&#9660;</span>
-        </div>
-        <div id="individualAdjustmentsContent" class="collapsible-content collapsed">
-            <div class="checkbox-group">
-                <div class="checkbox-item toggle-container" style="margin-top: 10px; margin-bottom: 5px;">
-                  <label for="recommendedCheckbox" style="font-weight: bold;">Recommended (Brighten All Images +10)</label>
-                  <label class="switch">
-                    <input type="checkbox" id="recommendedCheckbox" onchange="updateGlobalRecommendedCheckboxes()">
-                    <span class="slider"></span>
-                  </label>
-                </div>
-              </div>
-            <div class="toolbar">
-                <div class="adjustment-grid">
-                    <div class="adjustment-cell">
-                        <p>Image 1</p>
-                        <div class="toggle-container">
-                            <label>+5</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness5-0" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>+10</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness10-0" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>+15</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness15-0" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="adjustment-cell">
-                        <p>Image 2</p>
-                        <div class="toggle-container">
-                            <label>+5</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness5-1" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>+10</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness10-1" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>+15</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness15-1" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="adjustment-cell">
-                        <p>Image 3</p>
-                        <div class="toggle-container">
-                            <label>+5</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness5-2" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>+10</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness10-2" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>+15</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness15-2" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="adjustment-cell">
-                        <p>Image 4</p>
-                        <div class="toggle-container">
-                            <label>+5</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness5-3" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>+10</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness10-3" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>+15</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness15-3" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="adjustment-cell">
-                        <p>Image 5</p>
-                        <div class="toggle-container">
-                            <label>+5</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness5-4" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>+10</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness10-4" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>+15</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness15-4" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="adjustment-cell">
-                        <p>Image 6</p>
-                        <div class="toggle-container">
-                            <label>+5</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness5-5" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>+10</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness10-5" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>+15</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness15-5" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="adjustment-cell">
-                        <p>Image 7</p>
-                        <div class="toggle-container">
-                            <label>+5</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness5-6" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>+10</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness10-6" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>+15</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness15-6" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="adjustment-cell">
-                        <p>Image 8</p>
-                        <div class="toggle-container">
-                            <label>+5</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness5-7" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>+10</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness10-7" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>+15</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness15-7" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="adjustment-cell">
-                        <p>Image 9</p>
-                        <div class="toggle-container">
-                            <label>+5</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness5-8" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>+10</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness10-8" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>+15</label>
-                            <label class="switch">
-                                <input type="checkbox" id="brightness15-8" onchange="updatePreviews();">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="toolbar">
-          <b>File Name Settings</b>
-          <input type="text" id="customNameInput" placeholder="enter custom name" oninput="updatePreviews()">
-          <div id="filenamePreview"></div>
-        </div>
-        <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start;">
+    <div class="sheets-container">
+      <div class="all-sheets-container">
+        <button id="addSheetButton" onclick="addContactSheet()">+ Add Another Contact Sheet</button>
+        <div id="contactSheetsContainer"></div>
+        <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start; width: 500px;">
           <button id="downloadButton" onclick="confirmDownload()" disabled style="display: flex; align-items: center; justify-content: center; gap: 5px; padding: 10px 20px; font-size: 14px; width: 100%;">
-            <span style="font-size: 20px; line-height: 1;">&darr;</span> Download Contact Sheet
+            <span style="font-size: 20px; line-height: 1;">&darr;</span> Download All Contact Sheets
           </button>
           <button id="clearButton" onclick="clearAll()" style="display: flex; align-items: center; justify-content: center; gap: 5px; background-color: #f0f0f0; color: #555; border: 1px solid #ccc; border-radius: 4px; padding: 10px 20px; font-size: 14px; width: 100%;">
             <span style="font-size: 20px; line-height: 1;">&times;</span> Clear All
           </button>
         </div>
       </div>
-      <div class="layer-panel">
-        <h2>Contact Sheet Preview</h2>
-        <canvas id="contactSheetPreview" width="819" height="792"></canvas>
-      </div>
     </div>
-    <canvas id="contactSheetCanvas" width="2550" height="3300"></canvas>
   </div>
 
   <script>
-    const contactSheetCanvas = document.getElementById('contactSheetCanvas');
-    const contactSheetCtx = contactSheetCanvas.getContext('2d');
-    const contactSheetPreview = document.getElementById('contactSheetPreview');
-    const previewCtx = contactSheetPreview.getContext('2d');
-    const recommendedCheckbox = document.getElementById('recommendedCheckbox');
-    const customNameInput = document.getElementById('customNameInput');
-    const filenamePreview = document.getElementById('filenamePreview');
-    const downloadButton = document.getElementById('downloadButton');
-    const uploadContent = document.getElementById('uploadContent');
-    const uploadArrow = document.getElementById('uploadArrow');
-    const individualAdjustmentsContent = document.getElementById('individualAdjustmentsContent');
-    const individualAdjustmentsArrow = document.getElementById('individualAdjustmentsArrow');
-    const loadingSpinner = document.getElementById('loading-spinner');
-    const imageUrlInput = document.getElementById('imageUrlInput');
-    const thumbnailPreview = document.getElementById('thumbnail-preview');
-    
-    let images = [];
-    let imageBlobs = []; // Store original blobs for ZIP creation
+    let contactSheets = [];
+    let sheetCounter = 0;
     let backgroundImage = new Image();
-    let individualAdjustments = [];
+    const downloadButton = document.getElementById('downloadButton');
 
     // Auto-load the border image from the specified URL
     function loadDefaultBorderImage() {
       backgroundImage.crossOrigin = "anonymous";
       backgroundImage.onload = () => {
-        updatePreviews();
+        updateAllPreviews();
       };
       backgroundImage.onerror = () => {
         console.warn('Could not load default border image from URL');
@@ -516,178 +293,320 @@
       backgroundImage.src = 'https://cdn.shopify.com/s/files/1/0648/6209/3510/files/Teddys_Magnets_2.75x2.75_octaganal_magnets_border_with_url.png?v=1757688444';
     }
 
-    function initIndividualAdjustments() {
-        individualAdjustments = Array(9).fill(null).map(() => ({
-            brightness5: false,
-            brightness10: false,
-            brightness15: false
-        }));
-    }
-    
-    function updateAllCheckboxes(adjustment, checked) {
-        for (let i = 0; i < 9; i++) {
-            const checkbox = document.getElementById(`${adjustment}-${i}`);
-            if (checkbox) {
-                checkbox.checked = checked;
-                individualAdjustments[i][adjustment] = checked;
-            }
-        }
-        updatePreviews();
+    function createContactSheet() {
+      const sheetId = sheetCounter++;
+      
+      const sheet = {
+        id: sheetId,
+        images: [],
+        imageBlobs: [],
+        individualAdjustments: Array(9).fill(null).map(() => ({
+          brightness5: false,
+          brightness10: false,
+          brightness15: false
+        }))
+      };
+
+      contactSheets.push(sheet);
+      renderContactSheet(sheet);
+      updateDownloadButton();
+      return sheet;
     }
 
-    function updateGlobalRecommendedCheckboxState() {
-        const allRecommended = individualAdjustments.every(adj => adj.brightness10);
-        recommendedCheckbox.checked = allRecommended;
+    function renderContactSheet(sheet) {
+      const container = document.getElementById('contactSheetsContainer');
+      const sheetDiv = document.createElement('div');
+      sheetDiv.className = 'contact-sheet-section';
+      sheetDiv.id = `sheet-${sheet.id}`;
+      
+      sheetDiv.innerHTML = `
+        <div class="contact-sheet-header">
+          <h3>Contact Sheet ${contactSheets.indexOf(sheet) + 1}</h3>
+          ${contactSheets.length > 1 ? `<button class="remove-sheet-btn" onclick="removeContactSheet(${sheet.id})">Remove</button>` : ''}
+        </div>
+        
+        <div class="left-panel">
+          <div class="collapsible-header" onclick="toggleSection(${sheet.id}, 'upload')">
+            <b>Image URLs</b>
+            <span id="uploadArrow-${sheet.id}" class="collapse-arrow">&#9660;</span>
+          </div>
+          <div id="uploadContent-${sheet.id}" class="collapsible-content">
+            <div class="toolbar">
+              <div>
+                <label for="imageUrlInput-${sheet.id}">Paste Image URLs (comma-separated):</label>
+                <textarea id="imageUrlInput-${sheet.id}" class="imageUrlInput" placeholder="e.g., https://example.com/image1.jpg, https://example.com/image2.jpg" oninput="handleUrlInput(${sheet.id})"></textarea>
+              </div>
+              <div id="thumbnail-preview-${sheet.id}" class="thumbnail-grid"></div>
+              <div id="loading-spinner-${sheet.id}" class="loading-spinner hidden"></div>
+            </div>
+          </div>
+          
+          <div class="toolbar">
+            <b>File Name Settings</b>
+            <input type="text" id="customNameInput-${sheet.id}" class="customNameInput" placeholder="enter custom name" oninput="updatePreview(${sheet.id})">
+            <div id="filenamePreview-${sheet.id}" class="filenamePreview"></div>
+          </div>
+          
+          <div class="collapsible-header" onclick="toggleSection(${sheet.id}, 'adjustments')">
+              <b>Image Adjustments</b>
+              <span id="individualAdjustmentsArrow-${sheet.id}" class="collapse-arrow collapsed">&#9660;</span>
+          </div>
+          <div id="individualAdjustmentsContent-${sheet.id}" class="collapsible-content collapsed">
+              <div class="checkbox-group">
+                  <div class="checkbox-item toggle-container" style="margin-top: 10px; margin-bottom: 5px;">
+                    <label for="recommendedCheckbox-${sheet.id}" style="font-weight: bold;">Recommended (Brighten All Images +10)</label>
+                    <label class="switch">
+                      <input type="checkbox" id="recommendedCheckbox-${sheet.id}" onchange="updateGlobalRecommendedCheckboxes(${sheet.id})">
+                      <span class="slider"></span>
+                    </label>
+                  </div>
+                </div>
+              <div class="toolbar">
+                  <div class="adjustment-grid">
+                      ${Array(9).fill(0).map((_, i) => `
+                      <div class="adjustment-cell">
+                          <p>Image ${i + 1}</p>
+                          <div class="toggle-container">
+                              <label>+5</label>
+                              <label class="switch">
+                                  <input type="checkbox" id="brightness5-${sheet.id}-${i}" onchange="updatePreview(${sheet.id});">
+                                  <span class="slider"></span>
+                              </label>
+                          </div>
+                          <div class="toggle-container">
+                              <label>+10</label>
+                              <label class="switch">
+                                  <input type="checkbox" id="brightness10-${sheet.id}-${i}" onchange="updatePreview(${sheet.id});">
+                                  <span class="slider"></span>
+                              </label>
+                          </div>
+                          <div class="toggle-container">
+                              <label>+15</label>
+                              <label class="switch">
+                                  <input type="checkbox" id="brightness15-${sheet.id}-${i}" onchange="updatePreview(${sheet.id});">
+                                  <span class="slider"></span>
+                              </label>
+                          </div>
+                      </div>
+                      `).join('')}
+                  </div>
+              </div>
+          </div>
+        </div>
+        
+        <div class="layer-panel" style="margin-top: 15px;">
+          <h2>Contact Sheet Preview</h2>
+          <canvas id="contactSheetPreview-${sheet.id}" class="contactSheetPreview" width="819" height="792"></canvas>
+          <canvas id="contactSheetCanvas-${sheet.id}" class="contactSheetCanvas" width="2550" height="3300"></canvas>
+        </div>
+      `;
+      
+      container.appendChild(sheetDiv);
+      initCanvases(sheet.id);
+      updatePreview(sheet.id);
     }
 
-    function updateGlobalRecommendedCheckboxes() {
-        const checked = recommendedCheckbox.checked;
-        updateAllCheckboxes('brightness10', checked);
-        updatePreviews();
+    function removeContactSheet(sheetId) {
+      const index = contactSheets.findIndex(s => s.id === sheetId);
+      if (index > -1) {
+        contactSheets.splice(index, 1);
+        document.getElementById(`sheet-${sheetId}`).remove();
+        
+        // Renumber remaining sheets
+        contactSheets.forEach((sheet, idx) => {
+          const header = document.querySelector(`#sheet-${sheet.id} .contact-sheet-header h3`);
+          if (header) {
+            header.textContent = `Contact Sheet ${idx + 1}`;
+          }
+        });
+        
+        updateDownloadButton();
+      }
     }
 
-    function toggleUploadSection() {
-        uploadContent.classList.toggle('collapsed');
-        uploadArrow.classList.toggle('collapsed');
-    }
-    
-    function toggleIndividualAdjustments() {
-        individualAdjustmentsContent.classList.toggle('collapsed');
-        individualAdjustmentsArrow.classList.toggle('collapsed');
+    function addContactSheet() {
+      createContactSheet();
     }
 
-    function checkAndCollapse() {
-        if (images.length > 0 && backgroundImage.src) {
-            uploadContent.classList.add('collapsed');
-            uploadArrow.classList.add('collapsed');
-        }
-    }
-
-    function showLoading() {
-        loadingSpinner.classList.remove('hidden');
-    }
-
-    function hideLoading() {
-        loadingSpinner.classList.add('hidden');
+    function toggleSection(sheetId, section) {
+      const content = document.getElementById(`${section === 'upload' ? 'uploadContent' : 'individualAdjustmentsContent'}-${sheetId}`);
+      const arrow = document.getElementById(`${section === 'upload' ? 'uploadArrow' : 'individualAdjustmentsArrow'}-${sheetId}`);
+      content.classList.toggle('collapsed');
+      arrow.classList.toggle('collapsed');
     }
 
     function parseUrlString(urlString) {
-        if (urlString.startsWith('You\'re about to visit:')) {
-            return urlString.substring('You\'re about to visit:'.length).split(',').map(url => url.trim()).filter(url => url);
-        } else if (urlString.startsWith('r2-image-urls:')) {
-            return urlString.substring('r2-image-urls:'.length).split(',').map(url => url.trim()).filter(url => url);
-        } else {
-            return urlString.split(',').map(url => url.trim()).filter(url => url);
-        }
-    }
-
-    function updateThumbnails() {
-        const urlString = imageUrlInput.value.trim();
-        const urls = parseUrlString(urlString);
-
-        thumbnailPreview.innerHTML = '';
-        
-        if (urls.length > 0) {
-            urls.slice(0, 9).forEach(url => {
-                const img = document.createElement('img');
-                img.src = url;
-                img.alt = 'Thumbnail preview';
-                img.className = 'thumbnail-image';
-                img.onerror = () => {
-                    img.style.display = 'none';
-                };
-                thumbnailPreview.appendChild(img);
-            });
-        }
-    }
-
-    async function handleUrlInput() {
-        updateThumbnails();
-        
-        const urlString = imageUrlInput.value.trim();
-        const urls = parseUrlString(urlString);
-        
-        if (urls.length === 0) {
-            return;
-        }
-
-        showLoading();
-        
-        images = [];
-        imageBlobs = [];
-        const urlsToLoad = urls.slice(0, 9);
-        let loadedCount = 0;
-
-        for (let index = 0; index < urlsToLoad.length; index++) {
-            const url = urlsToLoad[index];
-            try {
-                const proxyUrl = `https://corsproxy.io/?` + encodeURIComponent(url);
-                const response = await fetch(proxyUrl);
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const blob = await response.blob();
-                
-                if (!blob.type.startsWith('image/')) {
-                    throw new Error('The URL did not point to a valid image file.');
-                }
-
-                imageBlobs[index] = blob;
-
-                const img = new Image();
-                img.onload = () => {
-                    images[index] = { img, x: 0, y: 0, width: img.width, height: img.height };
-                    loadedCount++;
-                    
-                    if (loadedCount === urlsToLoad.length) {
-                        downloadButton.disabled = images.length < 1;
-                        checkAndCollapse();
-                        if (images.length === 9) {
-                            recommendedCheckbox.checked = true;
-                            updateGlobalRecommendedCheckboxes();
-                            individualAdjustmentsContent.classList.remove('collapsed');
-                            individualAdjustmentsArrow.classList.remove('collapsed');
-                        }
-                        updatePreviews();
-                        hideLoading();
-                    }
-                };
-                img.onerror = () => {
-                    console.error(`Error loading image from ${url}`);
-                    loadedCount++;
-                    if (loadedCount === urlsToLoad.length) {
-                        downloadButton.disabled = images.length < 1;
-                        updatePreviews();
-                        hideLoading();
-                    }
-                };
-                img.src = URL.createObjectURL(blob);
-            } catch (error) {
-                console.error('Download error:', error);
-                loadedCount++;
-                if (loadedCount === urlsToLoad.length) {
-                    downloadButton.disabled = images.length < 1;
-                    updatePreviews();
-                    hideLoading();
-                }
-            }
-        }
-    }
-
-    function updatePreviews() {
-      for (let i = 0; i < 9; i++) {
-          individualAdjustments[i].brightness5 = document.getElementById(`brightness5-${i}`).checked;
-          individualAdjustments[i].brightness10 = document.getElementById(`brightness10-${i}`).checked;
-          individualAdjustments[i].brightness15 = document.getElementById(`brightness15-${i}`).checked;
+      if (urlString.startsWith('You\'re about to visit:')) {
+        return urlString.substring('You\'re about to visit:'.length).split(',').map(url => url.trim()).filter(url => url);
+      } else if (urlString.startsWith('r2-image-urls:')) {
+        return urlString.substring('r2-image-urls:'.length).split(',').map(url => url.trim()).filter(url => url);
+      } else {
+        return urlString.split(',').map(url => url.trim()).filter(url => url);
       }
-      drawContactSheetPreview();
-      updateFilenamePreview();
-      updateGlobalRecommendedCheckboxState();
     }
 
-    function initCanvases() {
+    function updateThumbnails(sheetId) {
+      const sheet = contactSheets.find(s => s.id === sheetId);
+      const urlString = document.getElementById(`imageUrlInput-${sheetId}`).value.trim();
+      const urls = parseUrlString(urlString);
+      const thumbnailPreview = document.getElementById(`thumbnail-preview-${sheetId}`);
+
+      thumbnailPreview.innerHTML = '';
+      
+      if (urls.length > 0) {
+        urls.slice(0, 9).forEach(url => {
+          const img = document.createElement('img');
+          img.src = url;
+          img.alt = 'Thumbnail preview';
+          img.className = 'thumbnail-image';
+          img.onerror = () => {
+            img.style.display = 'none';
+          };
+          thumbnailPreview.appendChild(img);
+        });
+      }
+    }
+
+    async function handleUrlInput(sheetId) {
+      const sheet = contactSheets.find(s => s.id === sheetId);
+      updateThumbnails(sheetId);
+      
+      const urlString = document.getElementById(`imageUrlInput-${sheetId}`).value.trim();
+      const urls = parseUrlString(urlString);
+      
+      if (urls.length === 0) {
+        return;
+      }
+
+      showLoading(sheetId);
+      
+      sheet.images = [];
+      sheet.imageBlobs = [];
+      const urlsToLoad = urls.slice(0, 9);
+      let loadedCount = 0;
+
+      for (let index = 0; index < urlsToLoad.length; index++) {
+        const url = urlsToLoad[index];
+        try {
+          const proxyUrl = `https://corsproxy.io/?` + encodeURIComponent(url);
+          const response = await fetch(proxyUrl);
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const blob = await response.blob();
+          
+          if (!blob.type.startsWith('image/')) {
+            throw new Error('The URL did not point to a valid image file.');
+          }
+
+          sheet.imageBlobs[index] = blob;
+
+          const img = new Image();
+          img.onload = () => {
+            sheet.images[index] = { img, x: 0, y: 0, width: img.width, height: img.height };
+            loadedCount++;
+            
+            if (loadedCount === urlsToLoad.length) {
+              checkAndCollapse(sheetId);
+              if (sheet.images.length === 9) {
+                document.getElementById(`recommendedCheckbox-${sheetId}`).checked = true;
+                updateGlobalRecommendedCheckboxes(sheetId);
+                const adjustmentsContent = document.getElementById(`individualAdjustmentsContent-${sheetId}`);
+                const adjustmentsArrow = document.getElementById(`individualAdjustmentsArrow-${sheetId}`);
+                adjustmentsContent.classList.remove('collapsed');
+                adjustmentsArrow.classList.remove('collapsed');
+              }
+              updatePreview(sheetId);
+              hideLoading(sheetId);
+              updateDownloadButton();
+            }
+          };
+          img.onerror = () => {
+            console.error(`Error loading image from ${url}`);
+            loadedCount++;
+            if (loadedCount === urlsToLoad.length) {
+              updatePreview(sheetId);
+              hideLoading(sheetId);
+              updateDownloadButton();
+            }
+          };
+          img.src = URL.createObjectURL(blob);
+        } catch (error) {
+          console.error('Download error:', error);
+          loadedCount++;
+          if (loadedCount === urlsToLoad.length) {
+            updatePreview(sheetId);
+            hideLoading(sheetId);
+            updateDownloadButton();
+          }
+        }
+      }
+    }
+
+    function checkAndCollapse(sheetId) {
+      const sheet = contactSheets.find(s => s.id === sheetId);
+      if (sheet.images.length > 0 && backgroundImage.src) {
+        const uploadContent = document.getElementById(`uploadContent-${sheetId}`);
+        const uploadArrow = document.getElementById(`uploadArrow-${sheetId}`);
+        uploadContent.classList.add('collapsed');
+        uploadArrow.classList.add('collapsed');
+      }
+    }
+
+    function showLoading(sheetId) {
+      document.getElementById(`loading-spinner-${sheetId}`).classList.remove('hidden');
+    }
+
+    function hideLoading(sheetId) {
+      document.getElementById(`loading-spinner-${sheetId}`).classList.add('hidden');
+    }
+
+    function updateGlobalRecommendedCheckboxes(sheetId) {
+      const sheet = contactSheets.find(s => s.id === sheetId);
+      const checked = document.getElementById(`recommendedCheckbox-${sheetId}`).checked;
+      
+      for (let i = 0; i < 9; i++) {
+        const checkbox = document.getElementById(`brightness10-${sheetId}-${i}`);
+        if (checkbox) {
+          checkbox.checked = checked;
+          sheet.individualAdjustments[i].brightness10 = checked;
+        }
+      }
+      updatePreview(sheetId);
+    }
+
+    function updatePreview(sheetId) {
+      const sheet = contactSheets.find(s => s.id === sheetId);
+      
+      for (let i = 0; i < 9; i++) {
+        sheet.individualAdjustments[i].brightness5 = document.getElementById(`brightness5-${sheetId}-${i}`).checked;
+        sheet.individualAdjustments[i].brightness10 = document.getElementById(`brightness10-${sheetId}-${i}`).checked;
+        sheet.individualAdjustments[i].brightness15 = document.getElementById(`brightness15-${sheetId}-${i}`).checked;
+      }
+      
+      drawContactSheetPreview(sheetId);
+      updateFilenamePreview(sheetId);
+      updateGlobalRecommendedCheckboxState(sheetId);
+    }
+
+    function updateAllPreviews() {
+      contactSheets.forEach(sheet => updatePreview(sheet.id));
+    }
+
+    function updateGlobalRecommendedCheckboxState(sheetId) {
+      const sheet = contactSheets.find(s => s.id === sheetId);
+      const allRecommended = sheet.individualAdjustments.every(adj => adj.brightness10);
+      document.getElementById(`recommendedCheckbox-${sheetId}`).checked = allRecommended;
+    }
+
+    function initCanvases(sheetId) {
+      const contactSheetCanvas = document.getElementById(`contactSheetCanvas-${sheetId}`);
+      const contactSheetCtx = contactSheetCanvas.getContext('2d');
+      const contactSheetPreview = document.getElementById(`contactSheetPreview-${sheetId}`);
+      const previewCtx = contactSheetPreview.getContext('2d');
+      
       contactSheetCtx.fillStyle = '#fff';
       contactSheetCtx.fillRect(0, 0, 2550, 3300);
       previewCtx.fillStyle = '#fff';
@@ -707,11 +626,11 @@
       
       const imageAspectRatio = image.width / image.height;
       if (imageAspectRatio > 1) {
-          sourceWidth = image.height;
-          sourceX = (image.width - sourceWidth) / 2;
+        sourceWidth = image.height;
+        sourceX = (image.width - sourceWidth) / 2;
       } else if (imageAspectRatio < 1) {
-          sourceHeight = image.width;
-          sourceY = (image.height - sourceHeight) / 2;
+        sourceHeight = image.width;
+        sourceY = (image.height - sourceHeight) / 2;
       }
 
       tempCtx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, targetSize, targetSize);
@@ -729,7 +648,11 @@
       return tempCanvas;
     }
 
-    function drawContactSheetPreview() {
+    function drawContactSheetPreview(sheetId) {
+      const sheet = contactSheets.find(s => s.id === sheetId);
+      const contactSheetPreview = document.getElementById(`contactSheetPreview-${sheetId}`);
+      const previewCtx = contactSheetPreview.getContext('2d');
+      
       previewCtx.fillStyle = '#fff';
       previewCtx.fillRect(0, 0, 819, 792);
       const marginTop = 74.25;
@@ -758,27 +681,31 @@
           previewCtx.fillRect(pos[0], pos[1], size, size);
         }
 
-        if (images[index]) {
-          const adj = individualAdjustments[index];
+        if (sheet.images[index]) {
+          const adj = sheet.individualAdjustments[index];
           let brightnessFactor = 1.0;
           if (adj.brightness5) brightnessFactor = 1.05;
           if (adj.brightness10) brightnessFactor = 1.10;
           if (adj.brightness15) brightnessFactor = 1.15;
           
-          const adjustedImage = adjustImage(images[index].img, 660, brightnessFactor);
+          const adjustedImage = adjustImage(sheet.images[index].img, 660, brightnessFactor);
           const offset = (size - photoSize) / 2;
           previewCtx.drawImage(adjustedImage, pos[0] + offset, pos[1] + offset, photoSize, photoSize);
         }
       });
       
-      const previewFilename = generateFilename();
+      const previewFilename = generateFilename(sheetId);
       previewCtx.fillStyle = '#000';
       previewCtx.font = 'bold 10px Arial';
       previewCtx.textAlign = 'center';
       previewCtx.fillText(previewFilename, contactSheetPreview.width / 2, 40);
     }
 
-    function generateContactSheet() {
+    function generateContactSheet(sheetId) {
+      const sheet = contactSheets.find(s => s.id === sheetId);
+      const contactSheetCanvas = document.getElementById(`contactSheetCanvas-${sheetId}`);
+      const contactSheetCtx = contactSheetCanvas.getContext('2d');
+      
       contactSheetCtx.fillStyle = '#fff';
       contactSheetCtx.fillRect(0, 0, 2550, 3300);
       const marginTop = 309.5;
@@ -799,12 +726,12 @@
         [marginSide + 2 * size + 2 * hSpacing, marginTop + 2 * size + 2 * vSpacing]
       ];
       
-      images.slice(0, 9).forEach((image, index) => {
+      sheet.images.slice(0, 9).forEach((image, index) => {
         if (backgroundImage.complete && backgroundImage.src) {
           contactSheetCtx.drawImage(backgroundImage, positions[index][0], positions[index][1], size, size);
         }
         if (image) {
-          const adj = individualAdjustments[index];
+          const adj = sheet.individualAdjustments[index];
           let brightnessFactor = 1.0;
           if (adj.brightness5) brightnessFactor = 1.05;
           if (adj.brightness10) brightnessFactor = 1.10;
@@ -816,7 +743,7 @@
         }
       });
       
-      const filename = generateFilename();
+      const filename = generateFilename(sheetId);
       contactSheetCtx.fillStyle = '#000';
       contactSheetCtx.font = 'bold 40px Arial';
       contactSheetCtx.textAlign = 'center';
@@ -825,22 +752,23 @@
       contactSheetCtx.fillText(filename, textX, 150);
     }
 
-    function generateFilename() {
-      const customName = customNameInput.value.trim();
+    function generateFilename(sheetId) {
+      const customName = document.getElementById(`customNameInput-${sheetId}`).value.trim();
+      const sheet = contactSheets.find(s => s.id === sheetId);
       const adjustments = [];
-      const isRecommended = recommendedCheckbox.checked;
-      const isCustom = individualAdjustments.some(adj =>
-          (adj.brightness10 !== isRecommended) ||
-          (adj.brightness5 !== false) ||
-          (adj.brightness15 !== false)
+      const isRecommended = document.getElementById(`recommendedCheckbox-${sheetId}`).checked;
+      const isCustom = sheet.individualAdjustments.some(adj =>
+        (adj.brightness10 !== isRecommended) ||
+        (adj.brightness5 !== false) ||
+        (adj.brightness15 !== false)
       );
       
       if (isCustom) {
-          adjustments.push("Custom Adjustments");
+        adjustments.push("Custom Adjustments");
       } else if (isRecommended) {
-          adjustments.push("Recommended");
+        adjustments.push("Recommended");
       } else {
-          adjustments.push("no adjustments");
+        adjustments.push("no adjustments");
       }
 
       let namePart = customName ? `${customName} ` : '';
@@ -849,98 +777,94 @@
       return `${namePart}contact sheet ${adjustmentsPart}.png`;
     }
 
-    function updateFilenamePreview() {
-      filenamePreview.textContent = `Filename: ${generateFilename()}`;
+    function updateFilenamePreview(sheetId) {
+      const filenamePreview = document.getElementById(`filenamePreview-${sheetId}`);
+      filenamePreview.textContent = `Filename: ${generateFilename(sheetId)}`;
+    }
+
+    function updateDownloadButton() {
+      const hasImages = contactSheets.some(sheet => sheet.images.length > 0);
+      downloadButton.disabled = !hasImages;
     }
 
     function confirmDownload() {
-      if (images.length > 0 && images.length < 9) {
-        if (confirm("The contact sheet is not complete, are you sure you want to download it?")) {
-          downloadContactSheet();
+      const incompleteSheets = contactSheets.filter(sheet => sheet.images.length > 0 && sheet.images.length < 9);
+      if (incompleteSheets.length > 0) {
+        if (confirm("Some contact sheets are not complete. Are you sure you want to download?")) {
+          downloadAllContactSheets();
         }
       } else {
-        downloadContactSheet();
+        downloadAllContactSheets();
       }
     }
 
-    async function downloadContactSheet() {
-      if (images.length === 0) {
+    async function downloadAllContactSheets() {
+      const sheetsWithImages = contactSheets.filter(sheet => sheet.images.length > 0);
+      
+      if (sheetsWithImages.length === 0) {
         console.error('Please upload at least 1 image to download.');
         return;
       }
       
       try {
-        showLoading();
-        
-        // Generate the contact sheet
-        generateContactSheet();
+        // Use the first sheet's custom name as the ZIP folder name
+        const firstCustomName = document.getElementById(`customNameInput-${sheetsWithImages[0].id}`).value.trim();
+        const zipFolderName = firstCustomName || 'customer_images';
         
         // Create ZIP file
         const zip = new JSZip();
-        const filenamePrefix = customNameInput.value.trim() || 'customer_images';
-        const topLevelFolder = zip.folder(filenamePrefix);
-        const originalsFolder = topLevelFolder.folder('Originals');
+        const topLevelFolder = zip.folder(zipFolderName);
         
-        // Add contact sheet to top level folder
-        const contactSheetDataURL = contactSheetCanvas.toDataURL('image/png');
-        const contactSheetBlob = await (await fetch(contactSheetDataURL)).blob();
-        topLevelFolder.file(generateFilename(), contactSheetBlob);
-        
-        // Add original images to Originals folder
-        for (let i = 0; i < imageBlobs.length; i++) {
-            if (imageBlobs[i]) {
-                const filename = `image_${i + 1}.jpg`;
-                originalsFolder.file(filename, imageBlobs[i]);
+        // Process each sheet
+        for (let i = 0; i < sheetsWithImages.length; i++) {
+          const sheet = sheetsWithImages[i];
+          
+          // Generate and add contact sheet
+          generateContactSheet(sheet.id);
+          const contactSheetCanvas = document.getElementById(`contactSheetCanvas-${sheet.id}`);
+          const contactSheetDataURL = contactSheetCanvas.toDataURL('image/png');
+          const contactSheetBlob = await (await fetch(contactSheetDataURL)).blob();
+          topLevelFolder.file(generateFilename(sheet.id), contactSheetBlob);
+          
+          // Create Originals folder (Originals, Originals 2, Originals 3, etc.)
+          const originalsFolderName = i === 0 ? 'Originals' : `Originals ${i + 1}`;
+          const originalsFolder = topLevelFolder.folder(originalsFolderName);
+          
+          // Add original images
+          for (let j = 0; j < sheet.imageBlobs.length; j++) {
+            if (sheet.imageBlobs[j]) {
+              const filename = `image_${j + 1}.jpg`;
+              originalsFolder.file(filename, sheet.imageBlobs[j]);
             }
+          }
         }
         
         // Generate and download ZIP
         const content = await zip.generateAsync({ type: "blob" });
-        saveAs(content, `${filenamePrefix}.zip`);
-        
-        hideLoading();
+        saveAs(content, `${zipFolderName}.zip`);
         
         // Clear all after successful download
         setTimeout(() => {
-            clearAll();
+          clearAll();
         }, 500);
         
       } catch (error) {
-        console.error('Error downloading contact sheet:', error);
-        console.error('Failed to download contact sheet. Ensure all images are uploaded and the border image is loaded.');
-        hideLoading();
+        console.error('Error downloading contact sheets:', error);
+        alert('Failed to download contact sheets. Ensure all images are uploaded and the border image is loaded.');
       }
     }
 
     function clearAll() {
-      images = [];
-      imageBlobs = [];
-      imageUrlInput.value = '';
-      customNameInput.value = '';
-      downloadButton.disabled = true;
-      thumbnailPreview.innerHTML = '';
-      
-      recommendedCheckbox.checked = false;
-      initIndividualAdjustments();
-      for (let i = 0; i < 9; i++) {
-          document.getElementById(`brightness5-${i}`).checked = false;
-          document.getElementById(`brightness10-${i}`).checked = false;
-          document.getElementById(`brightness15-${i}`).checked = false;
-      }
-
-      uploadContent.classList.remove('collapsed');
-      uploadArrow.classList.remove('collapsed');
-      
-      initCanvases();
-      loadDefaultBorderImage();
-      updatePreviews();
+      contactSheets = [];
+      document.getElementById('contactSheetsContainer').innerHTML = '';
+      sheetCounter = 0;
+      createContactSheet();
+      updateDownloadButton();
     }
 
-    // Initialize everything when the page loads
-    initIndividualAdjustments();
-    initCanvases();
+    // Initialize with one contact sheet
     loadDefaultBorderImage();
-    updatePreviews();
+    createContactSheet();
   </script>
 </body>
 </html>
