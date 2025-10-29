@@ -1,43 +1,12 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex));
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Teddy's Magnets - 2"x2" Magnets Contact Sheet V38</title>
+  <title>Teddy's Magnets - 2"x2" Magnets Contact Sheet Combined</title>
   <meta name="icon" content="data:," />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
     .container { max-width: 1500px; margin: 0 auto; }
@@ -52,25 +21,16 @@
     #clearButton { background-color: #007bff; color: white; border: none; border-radius: 4px; padding: 10px 20px; font-size: 14px; }
     #contactSheetPreview { width: 819px; height: 792px; }
     #contactSheetCanvas { display: none; }
-    .drop-zone {
-      border: 2px dashed #ccc;
-      padding: 20px;
-      text-align: center;
-      cursor: pointer;
-    }
-    .drop-zone.dragover {
-      background-color: #e1e1e1;
-      border-color: #999;
-    }
-    #adjustmentLabels {
-      margin-bottom: 10px;
-      font-style: italic;
-      color: #555;
-    }
     #customNameInput {
       width: 100%;
       box-sizing: border-box;
       padding: 8px;
+    }
+    #imageUrlInput {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px;
+      min-height: 100px;
     }
     #filenamePreview {
       margin-top: 5px;
@@ -95,18 +55,6 @@
     }
     .toolbar-title-group h2 {
         margin: 0;
-    }
-    .clear-adjustments-btn {
-        background: none;
-        border: 1px solid #ccc;
-        color: #555;
-        padding: 5px 10px;
-        font-size: 12px;
-        cursor: pointer;
-        border-radius: 4px;
-    }
-    .clear-adjustments-btn:hover {
-        background-color: #f0f0f0;
     }
     .layer-panel h2 {
         padding-top: 5px;
@@ -235,35 +183,46 @@
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
     }
+    .hidden {
+        display: none !important;
+    }
+    .thumbnail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    .thumbnail-image {
+        width: 100%;
+        height: 80px;
+        object-fit: contain;
+        border-radius: 0.375rem;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        cursor: pointer;
+        transition: transform 0.2s ease-in-out;
+    }
+    .thumbnail-image:hover {
+        transform: scale(1.05);
+    }
   </style>
 </head>
 <body>
-  <h2>Teddy's Magnets - 2"x2" Magnets Contact Sheet </h2>
+  <h2>Teddy's Magnets - 2"x2" Magnets Contact Sheet Combined</h2>
   <div class="container" style="margin: 0;">
     <div style="display: flex; gap: 20px; align-items: flex-start; margin: 10px 0;">
       <div class="left-panel">
         <div class="collapsible-header" onclick="toggleUploadSection()">
-          <b>File Uploads</b>
+          <b>Image URLs</b>
           <span id="uploadArrow" class="collapse-arrow">&#9660;</span>
         </div>
         <div id="uploadContent" class="collapsible-content">
           <div class="toolbar">
             <div>
-              <label for="imageUpload">Choose 9 Images:</label>
-              <input type="file" id="imageUpload" accept="image/*" multiple>
+              <label for="imageUrlInput">Paste Image URLs (comma-separated):</label>
+              <textarea id="imageUrlInput" placeholder="e.g., https://example.com/image1.jpg, https://example.com/image2.jpg" oninput="handleUrlInput()"></textarea>
             </div>
-            <div class="drop-zone" id="imageDropZone">
-              <p>Drag and drop images or a folder here</p>
-              <p class="text-sm text-gray-400 mt-2">
-                (Looks for images in a sub-folder called 'Originals')
-              </p>
-              <div id="loading-spinner" class="loading-spinner hidden"></div>
-            </div>
-            <div id="image-list" class="mt-4 text-left hidden">
-                <p class="text-sm font-medium text-gray-700">Found Images:</p>
-                <ul id="imageList" class="mt-1 text-gray-600 space-y-1">
-                </ul>
-            </div>
+            <div id="thumbnail-preview" class="thumbnail-grid"></div>
+            <div id="loading-spinner" class="loading-spinner hidden"></div>
           </div>
         </div>
         <div class="collapsible-header" onclick="toggleIndividualAdjustments()">
@@ -273,7 +232,7 @@
         <div id="individualAdjustmentsContent" class="collapsible-content collapsed">
             <div class="checkbox-group">
                 <div class="checkbox-item toggle-container" style="margin-top: 10px; margin-bottom: 5px;">
-                  <label for="recommendedCheckbox" style="font-weight: bold;">Brighten All Images +10</label>
+                  <label for="recommendedCheckbox" style="font-weight: bold;">Recommended (Brighten All Images +10)</label>
                   <label class="switch">
                     <input type="checkbox" id="recommendedCheckbox" onchange="updateGlobalRecommendedCheckboxes()">
                     <span class="slider"></span>
@@ -285,30 +244,23 @@
                     <div class="adjustment-cell">
                         <p>Image 1</p>
                         <div class="toggle-container">
-                            <label>Brightness</label>
+                            <label>+5</label>
                             <label class="switch">
-                                <input type="checkbox" id="brightness-0" onchange="updatePreviews();">
+                                <input type="checkbox" id="brightness5-0" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
                         <div class="toggle-container">
-                            <label>Auto Levels Full</label>
+                            <label>+10</label>
                             <label class="switch">
-                                <input type="checkbox" id="autoLevelsFull-0" onchange="handleAutoLevelsToggle(0, 'full');">
+                                <input type="checkbox" id="brightness10-0" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
                         <div class="toggle-container">
-                            <label>Auto Levels 1/2</label>
+                            <label>+15</label>
                             <label class="switch">
-                                <input type="checkbox" id="autoLevelsHalf-0" onchange="handleAutoLevelsToggle(0, 'half');">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>Blue</label>
-                            <label class="switch">
-                                <input type="checkbox" id="blueAdjustment-0" onchange="updatePreviews();">
+                                <input type="checkbox" id="brightness15-0" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
@@ -316,30 +268,23 @@
                     <div class="adjustment-cell">
                         <p>Image 2</p>
                         <div class="toggle-container">
-                            <label>Brightness</label>
+                            <label>+5</label>
                             <label class="switch">
-                                <input type="checkbox" id="brightness-1" onchange="updatePreviews();">
+                                <input type="checkbox" id="brightness5-1" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
                         <div class="toggle-container">
-                            <label>Auto Levels Full</label>
+                            <label>+10</label>
                             <label class="switch">
-                                <input type="checkbox" id="autoLevelsFull-1" onchange="handleAutoLevelsToggle(1, 'full');">
+                                <input type="checkbox" id="brightness10-1" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
                         <div class="toggle-container">
-                            <label>Auto Levels 1/2</label>
+                            <label>+15</label>
                             <label class="switch">
-                                <input type="checkbox" id="autoLevelsHalf-1" onchange="handleAutoLevelsToggle(1, 'half');">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>Blue</label>
-                            <label class="switch">
-                                <input type="checkbox" id="blueAdjustment-1" onchange="updatePreviews();">
+                                <input type="checkbox" id="brightness15-1" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
@@ -347,30 +292,23 @@
                     <div class="adjustment-cell">
                         <p>Image 3</p>
                         <div class="toggle-container">
-                            <label>Brightness</label>
+                            <label>+5</label>
                             <label class="switch">
-                                <input type="checkbox" id="brightness-2" onchange="updatePreviews();">
+                                <input type="checkbox" id="brightness5-2" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
                         <div class="toggle-container">
-                            <label>Auto Levels Full</label>
+                            <label>+10</label>
                             <label class="switch">
-                                <input type="checkbox" id="autoLevelsFull-2" onchange="handleAutoLevelsToggle(2, 'full');">
+                                <input type="checkbox" id="brightness10-2" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
                         <div class="toggle-container">
-                            <label>Auto Levels 1/2</label>
+                            <label>+15</label>
                             <label class="switch">
-                                <input type="checkbox" id="autoLevelsHalf-2" onchange="handleAutoLevelsToggle(2, 'half');">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>Blue</label>
-                            <label class="switch">
-                                <input type="checkbox" id="blueAdjustment-2" onchange="updatePreviews();">
+                                <input type="checkbox" id="brightness15-2" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
@@ -378,30 +316,23 @@
                     <div class="adjustment-cell">
                         <p>Image 4</p>
                         <div class="toggle-container">
-                            <label>Brightness</label>
+                            <label>+5</label>
                             <label class="switch">
-                                <input type="checkbox" id="brightness-3" onchange="updatePreviews();">
+                                <input type="checkbox" id="brightness5-3" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
                         <div class="toggle-container">
-                            <label>Auto Levels Full</label>
+                            <label>+10</label>
                             <label class="switch">
-                                <input type="checkbox" id="autoLevelsFull-3" onchange="handleAutoLevelsToggle(3, 'full');">
+                                <input type="checkbox" id="brightness10-3" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
                         <div class="toggle-container">
-                            <label>Auto Levels 1/2</label>
+                            <label>+15</label>
                             <label class="switch">
-                                <input type="checkbox" id="autoLevelsHalf-3" onchange="handleAutoLevelsToggle(3, 'half');">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>Blue</label>
-                            <label class="switch">
-                                <input type="checkbox" id="blueAdjustment-3" onchange="updatePreviews();">
+                                <input type="checkbox" id="brightness15-3" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
@@ -409,30 +340,23 @@
                     <div class="adjustment-cell">
                         <p>Image 5</p>
                         <div class="toggle-container">
-                            <label>Brightness</label>
+                            <label>+5</label>
                             <label class="switch">
-                                <input type="checkbox" id="brightness-4" onchange="updatePreviews();">
+                                <input type="checkbox" id="brightness5-4" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
                         <div class="toggle-container">
-                            <label>Auto Levels Full</label>
+                            <label>+10</label>
                             <label class="switch">
-                                <input type="checkbox" id="autoLevelsFull-4" onchange="handleAutoLevelsToggle(4, 'full');">
+                                <input type="checkbox" id="brightness10-4" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
                         <div class="toggle-container">
-                            <label>Auto Levels 1/2</label>
+                            <label>+15</label>
                             <label class="switch">
-                                <input type="checkbox" id="autoLevelsHalf-4" onchange="handleAutoLevelsToggle(4, 'half');">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>Blue</label>
-                            <label class="switch">
-                                <input type="checkbox" id="blueAdjustment-4" onchange="updatePreviews();">
+                                <input type="checkbox" id="brightness15-4" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
@@ -440,30 +364,23 @@
                     <div class="adjustment-cell">
                         <p>Image 6</p>
                         <div class="toggle-container">
-                            <label>Brightness</label>
+                            <label>+5</label>
                             <label class="switch">
-                                <input type="checkbox" id="brightness-5" onchange="updatePreviews();">
+                                <input type="checkbox" id="brightness5-5" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
                         <div class="toggle-container">
-                            <label>Auto Levels Full</label>
+                            <label>+10</label>
                             <label class="switch">
-                                <input type="checkbox" id="autoLevelsFull-5" onchange="handleAutoLevelsToggle(5, 'full');">
+                                <input type="checkbox" id="brightness10-5" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
                         <div class="toggle-container">
-                            <label>Auto Levels 1/2</label>
+                            <label>+15</label>
                             <label class="switch">
-                                <input type="checkbox" id="autoLevelsHalf-5" onchange="handleAutoLevelsToggle(5, 'half');">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>Blue</label>
-                            <label class="switch">
-                                <input type="checkbox" id="blueAdjustment-5" onchange="updatePreviews();">
+                                <input type="checkbox" id="brightness15-5" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
@@ -471,30 +388,23 @@
                     <div class="adjustment-cell">
                         <p>Image 7</p>
                         <div class="toggle-container">
-                            <label>Brightness</label>
+                            <label>+5</label>
                             <label class="switch">
-                                <input type="checkbox" id="brightness-6" onchange="updatePreviews();">
+                                <input type="checkbox" id="brightness5-6" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
                         <div class="toggle-container">
-                            <label>Auto Levels Full</label>
+                            <label>+10</label>
                             <label class="switch">
-                                <input type="checkbox" id="autoLevelsFull-6" onchange="handleAutoLevelsToggle(6, 'full');">
+                                <input type="checkbox" id="brightness10-6" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
                         <div class="toggle-container">
-                            <label>Auto Levels 1/2</label>
+                            <label>+15</label>
                             <label class="switch">
-                                <input type="checkbox" id="autoLevelsHalf-6" onchange="handleAutoLevelsToggle(6, 'half');">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>Blue</label>
-                            <label class="switch">
-                                <input type="checkbox" id="blueAdjustment-6" onchange="updatePreviews();">
+                                <input type="checkbox" id="brightness15-6" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
@@ -502,30 +412,23 @@
                     <div class="adjustment-cell">
                         <p>Image 8</p>
                         <div class="toggle-container">
-                            <label>Brightness</label>
+                            <label>+5</label>
                             <label class="switch">
-                                <input type="checkbox" id="brightness-7" onchange="updatePreviews();">
+                                <input type="checkbox" id="brightness5-7" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
                         <div class="toggle-container">
-                            <label>Auto Levels Full</label>
+                            <label>+10</label>
                             <label class="switch">
-                                <input type="checkbox" id="autoLevelsFull-7" onchange="handleAutoLevelsToggle(7, 'full');">
+                                <input type="checkbox" id="brightness10-7" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
                         <div class="toggle-container">
-                            <label>Auto Levels 1/2</label>
+                            <label>+15</label>
                             <label class="switch">
-                                <input type="checkbox" id="autoLevelsHalf-7" onchange="handleAutoLevelsToggle(7, 'half');">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>Blue</label>
-                            <label class="switch">
-                                <input type="checkbox" id="blueAdjustment-7" onchange="updatePreviews();">
+                                <input type="checkbox" id="brightness15-7" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
@@ -533,30 +436,23 @@
                     <div class="adjustment-cell">
                         <p>Image 9</p>
                         <div class="toggle-container">
-                            <label>Brightness</label>
+                            <label>+5</label>
                             <label class="switch">
-                                <input type="checkbox" id="brightness-8" onchange="updatePreviews();">
+                                <input type="checkbox" id="brightness5-8" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
                         <div class="toggle-container">
-                            <label>Auto Levels Full</label>
+                            <label>+10</label>
                             <label class="switch">
-                                <input type="checkbox" id="autoLevelsFull-8" onchange="handleAutoLevelsToggle(8, 'full');">
+                                <input type="checkbox" id="brightness10-8" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
                         <div class="toggle-container">
-                            <label>Auto Levels 1/2</label>
+                            <label>+15</label>
                             <label class="switch">
-                                <input type="checkbox" id="autoLevelsHalf-8" onchange="handleAutoLevelsToggle(8, 'half');">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <div class="toggle-container">
-                            <label>Blue</label>
-                            <label class="switch">
-                                <input type="checkbox" id="blueAdjustment-8" onchange="updatePreviews();">
+                                <input type="checkbox" id="brightness15-8" onchange="updatePreviews();">
                                 <span class="slider"></span>
                             </label>
                         </div>
@@ -599,10 +495,12 @@
     const uploadArrow = document.getElementById('uploadArrow');
     const individualAdjustmentsContent = document.getElementById('individualAdjustmentsContent');
     const individualAdjustmentsArrow = document.getElementById('individualAdjustmentsArrow');
-    const imageListElement = document.getElementById('imageList');
-    const imageListContainer = document.getElementById('image-list');
     const loadingSpinner = document.getElementById('loading-spinner');
+    const imageUrlInput = document.getElementById('imageUrlInput');
+    const thumbnailPreview = document.getElementById('thumbnail-preview');
+    
     let images = [];
+    let imageBlobs = []; // Store original blobs for ZIP creation
     let backgroundImage = new Image();
     let individualAdjustments = [];
 
@@ -620,10 +518,9 @@
 
     function initIndividualAdjustments() {
         individualAdjustments = Array(9).fill(null).map(() => ({
-            brightness: false,
-            blueAdjustment: false,
-            autoLevelsFull: false,
-            autoLevelsHalf: false
+            brightness5: false,
+            brightness10: false,
+            brightness15: false
         }));
     }
     
@@ -639,13 +536,13 @@
     }
 
     function updateGlobalRecommendedCheckboxState() {
-        const allRecommended = individualAdjustments.every(adj => adj.brightness);
+        const allRecommended = individualAdjustments.every(adj => adj.brightness10);
         recommendedCheckbox.checked = allRecommended;
     }
 
     function updateGlobalRecommendedCheckboxes() {
         const checked = recommendedCheckbox.checked;
-        updateAllCheckboxes('brightness', checked);
+        updateAllCheckboxes('brightness10', checked);
         updatePreviews();
     }
 
@@ -666,24 +563,6 @@
         }
     }
 
-    const imageDropZone = document.getElementById('imageDropZone');
-    // Prevent default behavior for drag and drop events
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        imageDropZone.addEventListener(eventName, preventDefaults, false);
-    });
-
-    function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-
-    // Highlight drop zone on drag enter/over
-    imageDropZone.addEventListener('dragenter', () => imageDropZone.classList.add('dragover'), false);
-    imageDropZone.addEventListener('dragleave', () => imageDropZone.classList.remove('dragover'), false);
-    imageDropZone.addEventListener('dragover', () => imageDropZone.classList.add('dragover'), false);
-
-    imageDropZone.addEventListener('drop', handleDrop, false);
-
     function showLoading() {
         loadingSpinner.classList.remove('hidden');
     }
@@ -692,153 +571,120 @@
         loadingSpinner.classList.add('hidden');
     }
 
-    async function handleDrop(e) {
-        const items = e.dataTransfer.items;
-        if (!items || items.length === 0) return;
+    function parseUrlString(urlString) {
+        if (urlString.startsWith('You\'re about to visit:')) {
+            return urlString.substring('You\'re about to visit:'.length).split(',').map(url => url.trim()).filter(url => url);
+        } else if (urlString.startsWith('r2-image-urls:')) {
+            return urlString.substring('r2-image-urls:'.length).split(',').map(url => url.trim()).filter(url => url);
+        } else {
+            return urlString.split(',').map(url => url.trim()).filter(url => url);
+        }
+    }
+
+    function updateThumbnails() {
+        const urlString = imageUrlInput.value.trim();
+        const urls = parseUrlString(urlString);
+
+        thumbnailPreview.innerHTML = '';
+        
+        if (urls.length > 0) {
+            urls.slice(0, 9).forEach(url => {
+                const img = document.createElement('img');
+                img.src = url;
+                img.alt = 'Thumbnail preview';
+                img.className = 'thumbnail-image';
+                img.onerror = () => {
+                    img.style.display = 'none';
+                };
+                thumbnailPreview.appendChild(img);
+            });
+        }
+    }
+
+    async function handleUrlInput() {
+        updateThumbnails();
+        
+        const urlString = imageUrlInput.value.trim();
+        const urls = parseUrlString(urlString);
+        
+        if (urls.length === 0) {
+            return;
+        }
 
         showLoading();
-
-        let droppedFolderEntry = null;
-        let droppedFiles = [];
-
-        for (let i = 0; i < items.length; i++) {
-            const entry = items[i].webkitGetAsEntry();
-            if (entry) {
-                if (entry.isDirectory) {
-                    droppedFolderEntry = entry;
-                } else if (entry.isFile) {
-                    const file = items[i].getAsFile();
-                    if (file) {
-                        droppedFiles.push(file);
-                    }
-                }
-            }
-        }
         
-        if (droppedFolderEntry) {
-            const originalFiles = [];
+        images = [];
+        imageBlobs = [];
+        const urlsToLoad = urls.slice(0, 9);
+        let loadedCount = 0;
+
+        for (let index = 0; index < urlsToLoad.length; index++) {
+            const url = urlsToLoad[index];
             try {
-                const folderName = droppedFolderEntry.name;
-                customNameInput.value = folderName;
-                await scanDirectory(droppedFolderEntry, 'Originals', originalFiles);
-                handleImageFiles(originalFiles);
+                const proxyUrl = `https://corsproxy.io/?` + encodeURIComponent(url);
+                const response = await fetch(proxyUrl);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const blob = await response.blob();
+                
+                if (!blob.type.startsWith('image/')) {
+                    throw new Error('The URL did not point to a valid image file.');
+                }
+
+                imageBlobs[index] = blob;
+
+                const img = new Image();
+                img.onload = () => {
+                    images[index] = { img, x: 0, y: 0, width: img.width, height: img.height };
+                    loadedCount++;
+                    
+                    if (loadedCount === urlsToLoad.length) {
+                        downloadButton.disabled = images.length < 1;
+                        checkAndCollapse();
+                        if (images.length === 9) {
+                            recommendedCheckbox.checked = true;
+                            updateGlobalRecommendedCheckboxes();
+                            individualAdjustmentsContent.classList.remove('collapsed');
+                            individualAdjustmentsArrow.classList.remove('collapsed');
+                        }
+                        updatePreviews();
+                        hideLoading();
+                    }
+                };
+                img.onerror = () => {
+                    console.error(`Error loading image from ${url}`);
+                    loadedCount++;
+                    if (loadedCount === urlsToLoad.length) {
+                        downloadButton.disabled = images.length < 1;
+                        updatePreviews();
+                        hideLoading();
+                    }
+                };
+                img.src = URL.createObjectURL(blob);
             } catch (error) {
-                console.error('Error processing folder:', error);
-                hideLoading();
-                // This is a custom error message, so no need for a modal here
+                console.error('Download error:', error);
+                loadedCount++;
+                if (loadedCount === urlsToLoad.length) {
+                    downloadButton.disabled = images.length < 1;
+                    updatePreviews();
+                    hideLoading();
+                }
             }
-        } else {
-            handleImageFiles(droppedFiles);
         }
     }
 
-    function isImageFile(file) {
-        return file.type.startsWith('image/');
-    }
-
-    function scanDirectory(directoryEntry, subfolderName, foundFiles) {
-        return new Promise((resolve, reject) => {
-            const directoryReader = directoryEntry.createReader();
-            directoryReader.readEntries(async (entries) => {
-                try {
-                    for (const entry of entries) {
-                        if (entry.isDirectory && entry.name === subfolderName) {
-                            await getFilesInDirectory(entry, foundFiles);
-                        }
-                    }
-                    resolve();
-                } catch (error) {
-                    reject(error);
-                }
-            }, (error) => {
-                reject(error);
-            });
-        });
-    }
-
-    function getFilesInDirectory(directoryEntry, foundFiles) {
-        return new Promise((resolve, reject) => {
-            const directoryReader = directoryEntry.createReader();
-            directoryReader.readEntries(async (entries) => {
-                try {
-                    for (const entry of entries) {
-                        if (entry.isFile) {
-                            const file = await getFile(entry);
-                            if (isImageFile(file)) {
-                                foundFiles.push(file);
-                            }
-                        }
-                    }
-                    resolve();
-                } catch (error) {
-                    reject(error);
-                }
-            }, (error) => {
-                reject(error);
-            });
-        });
-    }
-
-    function getFile(fileEntry) {
-        return new Promise((resolve, reject) => {
-            fileEntry.file(file => resolve(file), err => reject(err));
-        });
-    }
-
-    function handleImageFiles(files) {
-      if (files.length === 0) {
-        hideLoading();
-        return;
+    function updatePreviews() {
+      for (let i = 0; i < 9; i++) {
+          individualAdjustments[i].brightness5 = document.getElementById(`brightness5-${i}`).checked;
+          individualAdjustments[i].brightness10 = document.getElementById(`brightness10-${i}`).checked;
+          individualAdjustments[i].brightness15 = document.getElementById(`brightness15-${i}`).checked;
       }
-      
-      const filesToLoad = Array.from(files).filter(file => file.type.startsWith('image/')).slice(0, 9);
-      let loadedCount = 0;
-      images = [];
-      imageListElement.innerHTML = '';
-      
-      filesToLoad.forEach((file, index) => {
-        const img = new Image();
-        img.onload = () => {
-          images[index] = { img, x: 0, y: 0, width: img.width, height: img.height };
-          loadedCount++;
-          if (loadedCount === filesToLoad.length) {
-            downloadButton.disabled = images.length < 1;
-            checkAndCollapse();
-            if (images.length === 9) {
-                recommendedCheckbox.checked = true;
-                updateGlobalRecommendedCheckboxes();
-                individualAdjustmentsContent.classList.remove('collapsed');
-                individualAdjustmentsArrow.classList.remove('collapsed');
-            }
-            updatePreviews();
-            hideLoading();
-            showFoundFiles(filesToLoad);
-          }
-        };
-        img.onerror = () => {
-          console.error(`Error loading image ${file.name}`);
-          loadedCount++;
-          if (loadedCount === filesToLoad.length) {
-            downloadButton.disabled = images.length < 1;
-            updatePreviews();
-            hideLoading();
-          }
-        };
-        img.src = URL.createObjectURL(file);
-      });
-      if (filesToLoad.length === 0) {
-          hideLoading();
-      }
-    }
-
-    const imageUpload = document.getElementById('imageUpload');
-    imageUpload.addEventListener('change', (e) => handleImageFiles(e.target.files));
-
-    function showFoundFiles(files) {
-        if (files.length > 0) {
-            imageListContainer.classList.remove('hidden');
-            imageListElement.innerHTML = files.map(file => `<li>${file.name}</li>`).join('');
-        }
+      drawContactSheetPreview();
+      updateFilenamePreview();
+      updateGlobalRecommendedCheckboxState();
     }
 
     function initCanvases() {
@@ -848,7 +694,7 @@
       previewCtx.fillRect(0, 0, 819, 792);
     }
 
-    function adjustImage(image, targetSize, brightnessFactor, blueAdjustment, autoLevelsFull, autoLevelsHalf) {
+    function adjustImage(image, targetSize, brightnessFactor) {
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = targetSize;
       tempCanvas.height = targetSize;
@@ -872,69 +718,15 @@
       
       let imageData = tempCtx.getImageData(0, 0, targetSize, targetSize);
       let data = imageData.data;
-      let originalData = new Uint8ClampedArray(data);
-
-      let levelFactor = 0;
-      if (autoLevelsFull) {
-          levelFactor = 1;
-      } else if (autoLevelsHalf) {
-          levelFactor = 0.5;
-      }
-
-      if (levelFactor > 0) {
-          let r_min = 255, r_max = 0;
-          let g_min = 255, g_max = 0;
-          let b_min = 255, b_max = 0;
-
-          for (let i = 0; i < data.length; i += 4) {
-              r_min = Math.min(r_min, data[i]);
-              r_max = Math.max(r_max, data[i]);
-              g_min = Math.min(g_min, data[i + 1]);
-              g_max = Math.max(g_max, data[i + 1]);
-              b_min = Math.min(b_min, data[i + 2]);
-              b_max = Math.max(b_max, data[i + 2]);
-          }
-
-          for (let i = 0; i < data.length; i += 4) {
-              let r_full = (originalData[i] - r_min) * (255 / (r_max - r_min));
-              let g_full = (originalData[i + 1] - g_min) * (255 / (g_max - g_min));
-              let b_full = (originalData[i + 2] - b_min) * (255 / (b_max - b_min));
-              
-              data[i] = originalData[i] + (r_full - originalData[i]) * levelFactor;
-              data[i + 1] = originalData[i + 1] + (g_full - originalData[i + 1]) * levelFactor;
-              data[i + 2] = originalData[i + 2] + (b_full - originalData[i + 2]) * levelFactor;
-          }
-      }
 
       for (let i = 0; i < data.length; i += 4) {
         data[i] = Math.min(255, data[i] * brightnessFactor);
         data[i + 1] = Math.min(255, data[i + 1] * brightnessFactor);
-        data[i + 2] = Math.max(0, data[i + 2] * brightnessFactor + blueAdjustment);
+        data[i + 2] = Math.min(255, data[i + 2] * brightnessFactor);
       }
       
       tempCtx.putImageData(imageData, 0, 0);
       return tempCanvas;
-    }
-
-    function handleAutoLevelsToggle(index, type) {
-        if (type === 'full') {
-            document.getElementById(`autoLevelsHalf-${index}`).checked = false;
-        } else if (type === 'half') {
-            document.getElementById(`autoLevelsFull-${index}`).checked = false;
-        }
-        updatePreviews();
-    }
-
-    function updatePreviews() {
-      for (let i = 0; i < 9; i++) {
-          individualAdjustments[i].brightness = document.getElementById(`brightness-${i}`).checked;
-          individualAdjustments[i].blueAdjustment = document.getElementById(`blueAdjustment-${i}`).checked;
-          individualAdjustments[i].autoLevelsFull = document.getElementById(`autoLevelsFull-${i}`).checked;
-          individualAdjustments[i].autoLevelsHalf = document.getElementById(`autoLevelsHalf-${i}`).checked;
-      }
-      drawContactSheetPreview();
-      updateFilenamePreview();
-      updateGlobalRecommendedCheckboxState();
     }
 
     function drawContactSheetPreview() {
@@ -968,9 +760,12 @@
 
         if (images[index]) {
           const adj = individualAdjustments[index];
-          const brightnessFactor = adj.brightness ? 1.10 : 1.0;
-          const blueAdjustment = adj.blueAdjustment ? -5 : 0;
-          const adjustedImage = adjustImage(images[index].img, 660, brightnessFactor, blueAdjustment, adj.autoLevelsFull, adj.autoLevelsHalf);
+          let brightnessFactor = 1.0;
+          if (adj.brightness5) brightnessFactor = 1.05;
+          if (adj.brightness10) brightnessFactor = 1.10;
+          if (adj.brightness15) brightnessFactor = 1.15;
+          
+          const adjustedImage = adjustImage(images[index].img, 660, brightnessFactor);
           const offset = (size - photoSize) / 2;
           previewCtx.drawImage(adjustedImage, pos[0] + offset, pos[1] + offset, photoSize, photoSize);
         }
@@ -1010,9 +805,12 @@
         }
         if (image) {
           const adj = individualAdjustments[index];
-          const brightnessFactor = adj.brightness ? 1.10 : 1.0;
-          const blueAdjustment = adj.blueAdjustment ? -5 : 0;
-          const adjustedImage = adjustImage(image.img, 660, brightnessFactor, blueAdjustment, adj.autoLevelsFull, adj.autoLevelsHalf);
+          let brightnessFactor = 1.0;
+          if (adj.brightness5) brightnessFactor = 1.05;
+          if (adj.brightness10) brightnessFactor = 1.10;
+          if (adj.brightness15) brightnessFactor = 1.15;
+          
+          const adjustedImage = adjustImage(image.img, 660, brightnessFactor);
           const offset = (size - photoSize) / 2;
           contactSheetCtx.drawImage(adjustedImage, positions[index][0] + offset, positions[index][1] + offset, photoSize, photoSize);
         }
@@ -1032,10 +830,9 @@
       const adjustments = [];
       const isRecommended = recommendedCheckbox.checked;
       const isCustom = individualAdjustments.some(adj =>
-          (adj.brightness !== isRecommended) ||
-          (adj.blueAdjustment !== false) ||
-          (adj.autoLevelsFull !== false) ||
-          (adj.autoLevelsHalf !== false)
+          (adj.brightness10 !== isRecommended) ||
+          (adj.brightness5 !== false) ||
+          (adj.brightness15 !== false)
       );
       
       if (isCustom) {
@@ -1066,80 +863,69 @@
       }
     }
 
-    function downloadContactSheet() {
-  // Find the main content container using its class.
-  // NOTE: This targets the element with class="container" which holds everything.
-  const elementToCapture = document.querySelector('.container'); 
-
-  if (!elementToCapture) {
-      console.error("Main content container not found.");
-      return;
-  }
-
-  // 1. SAVE original styles defined inline (will be empty if not set)
-  const originalInlineBoxShadow = elementToCapture.style.boxShadow;
-  const originalInlineMargin = elementToCapture.style.margin;
-
-  try {
-    // 2. TEMPORARILY REMOVE styles that show up as unwanted borders/backgrounds in the capture
-    elementToCapture.style.boxShadow = 'none';
-    elementToCapture.style.margin = '0'; 
-
-    // Use a slight delay to ensure the DOM updates take effect before html2canvas runs
-    setTimeout(() => {
-      html2canvas(elementToCapture, {
-        allowTaint: true,
-        useCORS: true,
-        // Ensure full element content is captured, adjusting scroll for its position
-        scrollY: -elementToCapture.offsetTop,
-        scrollX: -elementToCapture.offsetLeft,
-        windowWidth: elementToCapture.offsetWidth,
-        windowHeight: elementToCapture.offsetHeight
-      }).then(canvas => {
-        // 3. RESTORE original inline styles immediately after capture
-        elementToCapture.style.boxShadow = originalInlineBoxShadow;
-        elementToCapture.style.margin = originalInlineMargin; 
+    async function downloadContactSheet() {
+      if (images.length === 0) {
+        console.error('Please upload at least 1 image to download.');
+        return;
+      }
+      
+      try {
+        showLoading();
         
-        const dataURL = canvas.toDataURL('image/png');
-        if (dataURL && dataURL !== 'data:,') {
-          const name = customNameInput.value.trim() || 'contact_sheet';
-          const link = document.createElement('a');
-          link.download = `${name}.png`;
-          link.href = dataURL;
-          document.body.appendChild(link);
-          link.click();
-          setTimeout(() => document.body.removeChild(link), 100);
-        } else {
-          throw new Error('Canvas dataURL is empty or invalid');
+        // Generate the contact sheet
+        generateContactSheet();
+        
+        // Create ZIP file
+        const zip = new JSZip();
+        const filenamePrefix = customNameInput.value.trim() || 'customer_images';
+        const topLevelFolder = zip.folder(filenamePrefix);
+        const originalsFolder = topLevelFolder.folder('Originals');
+        
+        // Add contact sheet to top level folder
+        const contactSheetDataURL = contactSheetCanvas.toDataURL('image/png');
+        const contactSheetBlob = await (await fetch(contactSheetDataURL)).blob();
+        topLevelFolder.file(generateFilename(), contactSheetBlob);
+        
+        // Add original images to Originals folder
+        for (let i = 0; i < imageBlobs.length; i++) {
+            if (imageBlobs[i]) {
+                const filename = `image_${i + 1}.jpg`;
+                originalsFolder.file(filename, imageBlobs[i]);
+            }
         }
-      });
-    }, 100);
-  } catch (error) {
-    console.error('Error downloading contact sheet:', error);
-    console.error('Failed to download contact sheet. Ensure all images are uploaded and the border image is loaded.');
-    
-    // 4. RESTORE styles even if an error occurred before .then() block
-    elementToCapture.style.boxShadow = originalInlineBoxShadow;
-    elementToCapture.style.margin = originalInlineMargin; 
-  }
-}
-
+        
+        // Generate and download ZIP
+        const content = await zip.generateAsync({ type: "blob" });
+        saveAs(content, `${filenamePrefix}.zip`);
+        
+        hideLoading();
+        
+        // Clear all after successful download
+        setTimeout(() => {
+            clearAll();
+        }, 500);
+        
+      } catch (error) {
+        console.error('Error downloading contact sheet:', error);
+        console.error('Failed to download contact sheet. Ensure all images are uploaded and the border image is loaded.');
+        hideLoading();
+      }
+    }
 
     function clearAll() {
       images = [];
-      document.getElementById('imageUpload').value = '';
+      imageBlobs = [];
+      imageUrlInput.value = '';
       customNameInput.value = '';
       downloadButton.disabled = true;
-      imageListElement.innerHTML = '';
-      imageListContainer.classList.add('hidden');
+      thumbnailPreview.innerHTML = '';
       
       recommendedCheckbox.checked = false;
       initIndividualAdjustments();
       for (let i = 0; i < 9; i++) {
-          document.getElementById(`brightness-${i}`).checked = false;
-          document.getElementById(`blueAdjustment-${i}`).checked = false;
-          document.getElementById(`autoLevelsFull-${i}`).checked = false;
-          document.getElementById(`autoLevelsHalf-${i}`).checked = false;
+          document.getElementById(`brightness5-${i}`).checked = false;
+          document.getElementById(`brightness10-${i}`).checked = false;
+          document.getElementById(`brightness15-${i}`).checked = false;
       }
 
       uploadContent.classList.remove('collapsed');
