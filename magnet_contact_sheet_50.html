@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teddy's Magnets - 2"x2" Magnets Contact Sheet v50</title>
+  <meta name="icon" content="data:," />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .container { max-width: 1500px; margin: 0 auto; }
+    .toolbar { display: block; gap: 20px; align-items: center; padding: 5px 0; border: none; }
+    .preview { border: 1px solid #ccc; margin-bottom: 20px; }
+    .layer-panel { width: 819px; border: 1px solid #ccc; padding: 10px; }
+    .left-panel { display: flex; flex-direction: column; gap: 15px; width: 500px; }
+    canvas { border: 1px solid #000; }
+    button { padding: 15px 30px; cursor: pointer; font-size: 18px; }
+    #downloadButton { background-color: #007bff; color: white; border: none; border-radius: 4px; }
+    #downloadButton:disabled { background-color: #cccccc; cursor: not-allowed; }
+    #clearButton { background-color: #007bff; color: white; border: none; border-radius: 4px; padding: 10px 20px; font-size: 14px; }
+    #addContactSheetButton { background-color: #28a745; color: white; border: none; border-radius: 4px; padding: 10px 20px; font-size: 14px; margin-bottom: 10px; }
+    #contactSheetPreview { width: 819px; height: 792px; }
+    #contactSheetCanvas { display: none; }
+    #customNameInput {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px;
+    }
+    #imageUrlInput {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px;
+      min-height: 100px;
+    }
+    #filenamePreview {
+      margin-top: 5px;
+      font-size: 0.9em;
+      color: #888;
+    }
+    .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toolbar-title-group {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+    .toolbar-title-group h2 {
+        margin: 0;
+    }
+    .layer-panel h2 {
+        padding-top: 5px;
+        padding-bottom: 5px;
+        margin: 0;
+    }
+
+    /* Toggle Switch Styles */
+    .toggle-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 20px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 20px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #2196F3;
+    }
+    input:focus + .slider {
+      box-shadow: 0 0 1px #2196F3;
+    }
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+    .grayed-out-text {
+        color: #888;
+    }
+
+    /* Individual Adjustments Grid Styles */
+    .adjustment-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .adjustment-cell {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .adjustment-cell p {
+      margin: 0 0 10px 0;
+      font-size: 0.8em;
+      font-weight: bold;
+    }
+    .adjustment-cell .toggle-container {
+      width: 100%;
+      margin-bottom: 5px;
+    }
+    .adjustment-cell label {
+      font-size: 0.8em;
+    }
+    /* Expand/Collapse styles */
+    .collapsible-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      padding: 10px 0;
+      border-top: 1px solid #000;
+      border-bottom: 1px solid #000;
+      margin-top: 5px;
+    }
+    .collapsible-header:first-child {
+        margin-top: 0;
+    }
+    .collapsible-content {
+      max-height: 650px;
+      overflow: hidden;
+      transition: max-height 0.3s ease-in-out;
+    }
+    .collapsible-content.collapsed {
+      max-height: 0;
+    }
+    .collapse-arrow {
+      transition: transform 0.3s ease-in-out;
+    }
+    .collapse-arrow.collapsed {
+      transform: rotate(-90deg);
+    }
+    .loading-spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .hidden {
+        display: none !important;
+    }
+    .thumbnail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    .thumbnail-image {
+        width: 100%;
+        height: 80px;
+        object-fit: contain;
+        border-radius: 0.375rem;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        cursor: pointer;
+        transition: transform 0.2s ease-in-out;
+    }
+    .thumbnail-image:hover {
+        transform: scale(1.05);
+    }
+    
+    /* Contact Sheet Selector Styles */
+    .sheet-selector {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+    .sheet-tab {
+      padding: 10px 20px;
+      background-color: #e0e0e0;
+      border: 2px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .sheet-tab:hover {
+      background-color: #d0d0d0;
+    }
+    .sheet-tab.active {
+      background-color: #007bff;
+      color: white;
+      border-color: #0056b3;
+    }
+    .sheet-tab .delete-btn {
+      background: none;
+      border: none;
+      color: #999;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 0;
+      margin: 0;
+      line-height: 1;
+    }
+    .sheet-tab.active .delete-btn {
+      color: white;
+    }
+    .sheet-tab .delete-btn:hover {
+      color: #ff0000;
+    }
+    
+    /* Download Notification */
+    .download-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #28a745;
+        color: white;
+        padding: 15px 25px;
+        border-radius: 4px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        display: none;
+        font-weight: bold;
+    }
+    .download-notification.show {
+        display: block;
+        animation: slideIn 0.3s ease-out;
+    }
+    @keyframes slideIn {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+  </style>
+</head>
+<body>
+  <div id="downloadNotification" class="download-notification">Preparing download...</div>
+  <h2>Teddy's Magnets - 2"x2" Magnets Contact Sheet v50</h2>
+  <div style="margin-bottom: 15px;">
+    <label for="customNameInput" style="font-weight: bold;">Folder & File Name:</label>
+    <input type="text" id="customNameInput" placeholder="e.g., John Doe" style="width: 300px; padding: 8px; box-sizing: border-box;" oninput="updateAllPreviews()">
+  </div>
+  <div class="container" style="margin: 0;">
+    <div style="display: flex; gap: 20px; align-items: flex-start; margin: 10px 0;">
+      <div class="left-panel">
+        <button id="addContactSheetButton" onclick="addContactSheet()" style="margin-bottom: 10px;">+ Add Contact Sheet</button>
+        
+        <!-- Contact Sheet Selector -->
+        <div class="sheet-selector" id="sheetSelector"></div>
+        
+        <div class="collapsible-header" onclick="toggleUploadSection()">
+          <b>Paste Image URLs</b>
+          <span id="uploadArrow" class="collapse-arrow">&#9660;</span>
+        </div>
+        <div id="uploadContent" class="collapsible-content">
+          <div class="toolbar">
+            <div>
+              <label for="imageUrlInput">Paste Image URLs (comma-separated):</label>
+              <textarea id="imageUrlInput" placeholder="e.g., https://example.com/image1.jpg, https://example.com/image2.jpg" oninput="handleUrlInput()"></textarea>
+            </div>
+            <div id="thumbnail-preview" class="thumbnail-grid"></div>
+            <div id="loading-spinner" class="loading-spinner hidden"></div>
+          </div>
+        </div>
+        <div class="collapsible-header" onclick="toggleIndividualAdjustments()">
+            <b>Image Adjustments</b>
+            <span id="individualAdjustmentsArrow" class="collapse-arrow collapsed">&#9660;</span>
+        </div>
+        <div id="individualAdjustmentsContent" class="collapsible-content collapsed">
+            <div class="checkbox-group">
+                <div class="checkbox-item toggle-container" style="margin-top: 10px; margin-bottom: 5px;">
+                  <label for="recommendedCheckbox" style="font-weight: bold;">Recommended (Brighten All Images +10)</label>
+                  <label class="switch">
+                    <input type="checkbox" id="recommendedCheckbox" onchange="updateGlobalRecommendedCheckboxes()">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+            </div>
+            
+            <div class="adjustment-grid" id="adjustmentGrid"></div>
+        </div>
+        <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;">
+          <button id="downloadButton" onclick="confirmDownload()" disabled>Download Files</button>
+          <button id="clearButton" onclick="clearAll()">Clear All Contact Sheets</button>
+        </div>
+      </div>
+      <div class="layer-panel">
+        <div class="toolbar-title-group">
+          <h2>Preview</h2>
+        </div>
+        <canvas id="contactSheetPreview" class="preview"></canvas>
+      </div>
+    </div>
+  </div>
+  <canvas id="contactSheetCanvas" width="2550" height="3300"></canvas>
+
+  <script>
+    const contactSheetPreview = document.getElementById('contactSheetPreview');
+    const previewCtx = contactSheetPreview.getContext('2d');
+    const contactSheetCanvas = document.getElementById('contactSheetCanvas');
+    const contactSheetCtx = contactSheetCanvas.getContext('2d');
+    const imageUrlInput = document.getElementById('imageUrlInput');
+    const customNameInput = document.getElementById('customNameInput');
+    const downloadButton = document.getElementById('downloadButton');
+    const clearButton = document.getElementById('clearButton');
+    const recommendedCheckbox = document.getElementById('recommendedCheckbox');
+    const thumbnailPreview = document.getElementById('thumbnail-preview');
+    const loadingSpinner = document.getElementById('loading-spinner');
+    const uploadContent = document.getElementById('uploadContent');
+    const uploadArrow = document.getElementById('uploadArrow');
+    const sheetSelector = document.getElementById('sheetSelector');
+
+    // Multi-contact sheet data structure
+    let contactSheets = [];
+    let currentSheetIndex = 0;
+    let nextSheetId = 1;
+
+    // Background image
+    let backgroundImage = new Image();
+    backgroundImage.crossOrigin = "anonymous";
+
+    function initCanvases() {
+      contactSheetPreview.width = 819;
+      contactSheetPreview.height = 792;
+      contactSheetCanvas.width = 2550;
+      contactSheetCanvas.height = 3300;
+    }
+
+    function loadDefaultBorderImage() {
+      backgroundImage.src = 'https://cdn.shopify.com/s/files/1/0648/6209/3510/files/Teddys_Magnets_2.75x2.75_octaganal_magnets_border_with_url.png?v=1757688444';
+      backgroundImage.onload = () => {
+        updateAllPreviews();
+      };
+    }
+
+    function showLoading() {
+      loadingSpinner.classList.remove('hidden');
+    }
+
+    function hideLoading() {
+      loadingSpinner.classList.add('hidden');
+    }
+
+    function showDownloadNotification() {
+      const notification = document.getElementById('downloadNotification');
+      notification.classList.add('show');
+      setTimeout(() => {
+        notification.classList.remove('show');
+      }, 3000); // Hide after 3 seconds
+    }
+
+    function disableButtons() {
+      downloadButton.disabled = true;
+      clearButton.disabled = true;
+      downloadButton.style.opacity = '0.5';
+      clearButton.style.opacity = '0.5';
+      const addSheetButton = document.getElementById('addContactSheetButton');
+      if (addSheetButton) {
+        addSheetButton.disabled = true;
+        addSheetButton.style.opacity = '0.5';
+      }
+    }
+
+    function enableButtons() {
+      clearButton.disabled = false;
+      clearButton.style.opacity = '1';
+      const addSheetButton = document.getElementById('addContactSheetButton');
+      if (addSheetButton) {
+        addSheetButton.disabled = false;
+        addSheetButton.style.opacity = '1';
+      }
+      // downloadButton will be re-enabled by updateDownloadButton() based on whether there are images
+      updateDownloadButton();
+    }
+
+    function toggleUploadSection() {
+      uploadContent.classList.toggle('collapsed');
+      uploadArrow.classList.toggle('collapsed');
+    }
+
+    function toggleIndividualAdjustments() {
+      const content = document.getElementById('individualAdjustmentsContent');
+      const arrow = document.getElementById('individualAdjustmentsArrow');
+      content.classList.toggle('collapsed');
+      arrow.classList.toggle('collapsed');
+    }
+
+    // Initialize the first contact sheet
+    function initFirstContactSheet() {
+      contactSheets.push({
+        id: nextSheetId++,
+        images: [],
+        imageBlobs: [],
+        individualAdjustments: Array(12).fill(null).map(() => ({
+          brightness5: false,
+          brightness10: false,
+          brightness15: false,
+          brightness20: false
+        })),
+        urls: '',
+        recommended: false
+      });
+      currentSheetIndex = 0;
+      renderSheetSelector();
+      loadSheet(0);
+    }
+
+    function addContactSheet() {
+      contactSheets.push({
+        id: nextSheetId++,
+        images: [],
+        imageBlobs: [],
+        individualAdjustments: Array(12).fill(null).map(() => ({
+          brightness5: false,
+          brightness10: false,
+          brightness15: false,
+          brightness20: false
+        })),
+        urls: '',
+        recommended: false
+      });
+      currentSheetIndex = contactSheets.length - 1;
+      console.log('Added new sheet. Total sheets:', contactSheets.length, 'Current index:', currentSheetIndex);
+      renderSheetSelector();
+      loadSheet(currentSheetIndex);
+      
+      // Auto-expand the upload section for new sheet
+      uploadContent.classList.remove('collapsed');
+      uploadArrow.classList.remove('collapsed');
+      
+      // Collapse adjustments section
+      const adjustmentsContent = document.getElementById('individualAdjustmentsContent');
+      const adjustmentsArrow = document.getElementById('individualAdjustmentsArrow');
+      adjustmentsContent.classList.add('collapsed');
+      adjustmentsArrow.classList.add('collapsed');
+    }
+
+    function deleteContactSheet(index) {
+      if (contactSheets.length === 1) {
+        alert("You must have at least one contact sheet.");
+        return;
+      }
+      contactSheets.splice(index, 1);
+      if (currentSheetIndex >= contactSheets.length) {
+        currentSheetIndex = contactSheets.length - 1;
+      }
+      renderSheetSelector();
+      loadSheet(currentSheetIndex);
+    }
+
+    function switchSheet(index) {
+      saveCurrentSheet();
+      currentSheetIndex = index;
+      loadSheet(index);
+      renderSheetSelector();
+    }
+
+    function saveCurrentSheet() {
+      if (currentSheetIndex < 0 || currentSheetIndex >= contactSheets.length) {
+        console.error('Invalid sheet index in saveCurrentSheet:', currentSheetIndex);
+        return;
+      }
+      const sheet = contactSheets[currentSheetIndex];
+      if (!sheet) {
+        console.error('Sheet not found in saveCurrentSheet');
+        return;
+      }
+      sheet.urls = imageUrlInput.value;
+      sheet.recommended = recommendedCheckbox.checked;
+    }
+
+    function loadSheet(index) {
+      if (index < 0 || index >= contactSheets.length) {
+        console.error('Invalid sheet index in loadSheet:', index);
+        return;
+      }
+      const sheet = contactSheets[index];
+      if (!sheet) {
+        console.error('Sheet not found in loadSheet');
+        return;
+      }
+      imageUrlInput.value = sheet.urls;
+      recommendedCheckbox.checked = sheet.recommended;
+      
+      // Update adjustment grid
+      renderAdjustmentGrid();
+      
+      // Load adjustments
+      sheet.individualAdjustments.forEach((adj, i) => {
+        const b5 = document.getElementById(`brightness5-${i}`);
+        const b10 = document.getElementById(`brightness10-${i}`);
+        const b15 = document.getElementById(`brightness15-${i}`);
+        const b20 = document.getElementById(`brightness20-${i}`);
+        if (b5) b5.checked = adj.brightness5;
+        if (b10) b10.checked = adj.brightness10;
+        if (b15) b15.checked = adj.brightness15;
+        if (b20) b20.checked = adj.brightness20;
+      });
+      
+      // Render thumbnails
+      renderThumbnails();
+      
+      updatePreviews();
+      updateDownloadButton();
+    }
+
+    function renderSheetSelector() {
+      sheetSelector.innerHTML = '';
+      contactSheets.forEach((sheet, index) => {
+        const tab = document.createElement('div');
+        tab.className = 'sheet-tab' + (index === currentSheetIndex ? ' active' : '');
+        
+        const label = document.createElement('span');
+        label.textContent = `Sheet ${index + 1}`;
+        tab.appendChild(label);
+        
+        if (contactSheets.length > 1) {
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'delete-btn';
+          deleteBtn.innerHTML = '×';
+          deleteBtn.onclick = (e) => {
+            e.stopPropagation();
+            deleteContactSheet(index);
+          };
+          tab.appendChild(deleteBtn);
+        }
+        
+        tab.onclick = () => switchSheet(index);
+        sheetSelector.appendChild(tab);
+      });
+    }
+
+    function renderThumbnails() {
+      thumbnailPreview.innerHTML = '';
+      if (currentSheetIndex < 0 || currentSheetIndex >= contactSheets.length) {
+        console.error('Invalid sheet index in renderThumbnails:', currentSheetIndex);
+        return;
+      }
+      const sheet = contactSheets[currentSheetIndex];
+      if (!sheet || !sheet.images) {
+        console.error('Invalid sheet in renderThumbnails');
+        return;
+      }
+      sheet.images.forEach((image, index) => {
+        const img = document.createElement('img');
+        img.src = image.src;
+        img.className = 'thumbnail-image';
+        img.title = `Image ${index + 1}`;
+        thumbnailPreview.appendChild(img);
+      });
+    }
+
+    function renderAdjustmentGrid() {
+      const grid = document.getElementById('adjustmentGrid');
+      grid.innerHTML = '';
+      
+      if (currentSheetIndex < 0 || currentSheetIndex >= contactSheets.length) {
+        console.error('Invalid sheet index in renderAdjustmentGrid:', currentSheetIndex);
+        return;
+      }
+      
+      const sheet = contactSheets[currentSheetIndex];
+      if (!sheet || !sheet.images) {
+        console.error('Invalid sheet in renderAdjustmentGrid');
+        return;
+      }
+      
+      const numImages = Math.max(9, sheet.images.length);
+      
+      for (let i = 0; i < numImages; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'adjustment-cell';
+        cell.innerHTML = `
+          <p>Image ${i + 1}</p>
+          <div class="toggle-container">
+            <label for="brightness5-${i}">+5</label>
+            <label class="switch">
+              <input type="checkbox" id="brightness5-${i}" onchange="updateIndividualCheckbox(${i}, 'brightness5')">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="toggle-container">
+            <label for="brightness10-${i}">+10</label>
+            <label class="switch">
+              <input type="checkbox" id="brightness10-${i}" onchange="updateIndividualCheckbox(${i}, 'brightness10')">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="toggle-container">
+            <label for="brightness15-${i}">+15</label>
+            <label class="switch">
+              <input type="checkbox" id="brightness15-${i}" onchange="updateIndividualCheckbox(${i}, 'brightness15')">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="toggle-container">
+            <label for="brightness20-${i}">+20</label>
+            <label class="switch">
+              <input type="checkbox" id="brightness20-${i}" onchange="updateIndividualCheckbox(${i}, 'brightness20')">
+              <span class="slider"></span>
+            </label>
+          </div>
+        `;
+        grid.appendChild(cell);
+      }
+    }
+
+    async function handleUrlInput() {
+      let urlString = imageUrlInput.value;
+      
+      console.log('handleUrlInput called. Current sheet index:', currentSheetIndex, 'Total sheets:', contactSheets.length);
+      
+      // Remove common prefixes that might be copied with URLs
+      urlString = urlString.replace(/^You're about to visit:\s*/i, '');
+      urlString = urlString.replace(/^Visit:\s*/i, '');
+      
+      const urls = urlString.split(',').map(url => url.trim()).filter(url => url && url.startsWith('http'));
+      console.log('Processing', urls.length, 'URLs');
+      
+      // Ensure we have a valid current sheet
+      if (currentSheetIndex < 0 || currentSheetIndex >= contactSheets.length) {
+        console.error('Invalid sheet index:', currentSheetIndex);
+        return;
+      }
+      
+      const sheet = contactSheets[currentSheetIndex];
+      
+      if (!sheet) {
+        console.error('Sheet not found at index:', currentSheetIndex);
+        return;
+      }
+      
+      console.log('Sheet found, loading images...');
+      showLoading();
+      sheet.images = [];
+      sheet.imageBlobs = [];
+      
+      for (const url of urls) {
+        try {
+          // Load image without crossOrigin to avoid CORS issues
+          const img = new Image();
+          
+          await new Promise((resolve, reject) => {
+            img.onload = () => {
+              sheet.images.push({ img, src: url });
+              sheet.imageBlobs.push(null); // Will create blob on download if needed
+              resolve();
+            };
+            img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
+            img.src = url;
+          });
+        } catch (error) {
+          console.error(`Error loading image from ${url}:`, error);
+        }
+      }
+      
+      hideLoading();
+      console.log('Finished loading images. Total loaded:', sheet.images.length);
+      renderThumbnails();
+      renderAdjustmentGrid();
+      
+      // After images are loaded, collapse upload section and expand adjustments
+      if (sheet.images.length > 0) {
+        // Collapse upload section
+        uploadContent.classList.add('collapsed');
+        uploadArrow.classList.add('collapsed');
+        
+        // Expand adjustments section
+        const adjustmentsContent = document.getElementById('individualAdjustmentsContent');
+        const adjustmentsArrow = document.getElementById('individualAdjustmentsArrow');
+        adjustmentsContent.classList.remove('collapsed');
+        adjustmentsArrow.classList.remove('collapsed');
+        
+        // Enable recommended toggle
+        recommendedCheckbox.checked = true;
+        sheet.recommended = true;
+        updateGlobalRecommendedCheckboxes();
+      }
+      
+      updatePreviews();
+      updateDownloadButton();
+    }
+
+    function updateDownloadButton() {
+      const hasAnyImages = contactSheets.some(sheet => sheet.images.length > 0);
+      downloadButton.disabled = !hasAnyImages;
+      downloadButton.style.opacity = hasAnyImages ? '1' : '0.5';
+    }
+
+    function updateGlobalRecommendedCheckboxes() {
+      const sheet = contactSheets[currentSheetIndex];
+      const isRecommended = recommendedCheckbox.checked;
+      
+      for (let i = 0; i < 12; i++) {
+        sheet.individualAdjustments[i].brightness10 = isRecommended;
+        sheet.individualAdjustments[i].brightness5 = false;
+        sheet.individualAdjustments[i].brightness15 = false;
+        sheet.individualAdjustments[i].brightness20 = false;
+        
+        const b5 = document.getElementById(`brightness5-${i}`);
+        const b10 = document.getElementById(`brightness10-${i}`);
+        const b15 = document.getElementById(`brightness15-${i}`);
+        const b20 = document.getElementById(`brightness20-${i}`);
+        if (b5) b5.checked = false;
+        if (b10) b10.checked = isRecommended;
+        if (b15) b15.checked = false;
+        if (b20) b20.checked = false;
+      }
+      
+      updatePreviews();
+    }
+
+    function updateIndividualCheckbox(index, type) {
+      const sheet = contactSheets[currentSheetIndex];
+      const b5 = document.getElementById(`brightness5-${index}`);
+      const b10 = document.getElementById(`brightness10-${index}`);
+      const b15 = document.getElementById(`brightness15-${index}`);
+      const b20 = document.getElementById(`brightness20-${index}`);
+      
+      sheet.individualAdjustments[index].brightness5 = b5.checked;
+      sheet.individualAdjustments[index].brightness10 = b10.checked;
+      sheet.individualAdjustments[index].brightness15 = b15.checked;
+      sheet.individualAdjustments[index].brightness20 = b20.checked;
+      
+      if (type === 'brightness5' && b5.checked) {
+        sheet.individualAdjustments[index].brightness10 = false;
+        sheet.individualAdjustments[index].brightness15 = false;
+        sheet.individualAdjustments[index].brightness20 = false;
+        b10.checked = false;
+        b15.checked = false;
+        b20.checked = false;
+      } else if (type === 'brightness10' && b10.checked) {
+        sheet.individualAdjustments[index].brightness5 = false;
+        sheet.individualAdjustments[index].brightness15 = false;
+        sheet.individualAdjustments[index].brightness20 = false;
+        b5.checked = false;
+        b15.checked = false;
+        b20.checked = false;
+      } else if (type === 'brightness15' && b15.checked) {
+        sheet.individualAdjustments[index].brightness5 = false;
+        sheet.individualAdjustments[index].brightness10 = false;
+        sheet.individualAdjustments[index].brightness20 = false;
+        b5.checked = false;
+        b10.checked = false;
+        b20.checked = false;
+      } else if (type === 'brightness20' && b20.checked) {
+        sheet.individualAdjustments[index].brightness5 = false;
+        sheet.individualAdjustments[index].brightness10 = false;
+        sheet.individualAdjustments[index].brightness15 = false;
+        b5.checked = false;
+        b10.checked = false;
+        b15.checked = false;
+      }
+      
+      // Check if all images are at +10 brightness
+      const allAt10 = sheet.individualAdjustments.every(adj => 
+        adj.brightness10 === true && adj.brightness5 === false && adj.brightness15 === false && adj.brightness20 === false
+      );
+      
+      // Update the Recommended toggle to match
+      recommendedCheckbox.checked = allAt10;
+      sheet.recommended = allAt10;
+      
+      updatePreviews();
+    }
+
+    function updatePreviews() {
+      drawContactSheetPreview();
+    }
+
+    function updateAllPreviews() {
+      contactSheets.forEach((_, index) => {
+        if (index === currentSheetIndex) {
+          updatePreviews();
+        }
+      });
+    }
+
+    function adjustImage(image, targetSize, brightnessFactor) {
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = targetSize;
+      tempCanvas.height = targetSize;
+      const tempCtx = tempCanvas.getContext('2d');
+
+      const imageAspectRatio = image.width / image.height;
+      let sourceX = 0, sourceY = 0, sourceWidth = image.width, sourceHeight = image.height;
+
+      if (imageAspectRatio > 1) {
+          sourceWidth = image.height;
+          sourceX = (image.width - sourceWidth) / 2;
+      } else if (imageAspectRatio < 1) {
+          sourceHeight = image.width;
+          sourceY = (image.height - sourceHeight) / 2;
+      }
+
+      tempCtx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, targetSize, targetSize);
+      
+      // Try to apply brightness adjustment
+      // If CORS issues prevent this, just return the canvas as-is
+      if (brightnessFactor !== 1.0) {
+        try {
+          let imageData = tempCtx.getImageData(0, 0, targetSize, targetSize);
+          let data = imageData.data;
+
+          for (let i = 0; i < data.length; i += 4) {
+            data[i] = Math.min(255, data[i] * brightnessFactor);
+            data[i + 1] = Math.min(255, data[i + 1] * brightnessFactor);
+            data[i + 2] = Math.min(255, data[i + 2] * brightnessFactor);
+          }
+          
+          tempCtx.putImageData(imageData, 0, 0);
+        } catch (error) {
+          // CORS error - cannot adjust brightness
+          console.warn('Cannot apply brightness adjustment due to CORS restrictions');
+        }
+      }
+      
+      return tempCanvas;
+    }
+
+    function drawContactSheetPreview() {
+      const sheet = contactSheets[currentSheetIndex];
+      previewCtx.fillStyle = '#fff';
+      previewCtx.fillRect(0, 0, 819, 792);
+      const marginTop = 74.25;
+      const hSpacing = 15.5;
+      const vSpacing = 34.1;
+      const size = 198;
+      const photoSize = 158;
+      const marginSide = (819 - (3 * size + 2 * hSpacing)) / 2;
+      const positions = [
+        [marginSide, marginTop],
+        [marginSide + size + hSpacing, marginTop],
+        [marginSide + 2 * size + 2 * hSpacing, marginTop],
+        [marginSide, marginTop + size + vSpacing],
+        [marginSide + size + hSpacing, marginTop + size + vSpacing],
+        [marginSide + 2 * size + 2 * hSpacing, marginTop + size + vSpacing],
+        [marginSide, marginTop + 2 * size + 2 * vSpacing],
+        [marginSide + size + hSpacing, marginTop + 2 * size + 2 * vSpacing],
+        [marginSide + 2 * size + 2 * hSpacing, marginTop + 2 * size + 2 * vSpacing]
+      ];
+      
+      positions.forEach((pos, index) => {
+        if (backgroundImage.complete && backgroundImage.src) {
+          previewCtx.drawImage(backgroundImage, pos[0], pos[1], size, size);
+        } else {
+          previewCtx.fillStyle = '#e0e0e0';
+          previewCtx.fillRect(pos[0], pos[1], size, size);
+        }
+
+        if (sheet.images[index]) {
+          const adj = sheet.individualAdjustments[index];
+          let brightnessFactor = 1.0;
+          if (adj.brightness5) brightnessFactor = 1.05;
+          if (adj.brightness10) brightnessFactor = 1.10;
+          if (adj.brightness15) brightnessFactor = 1.15;
+          if (adj.brightness20) brightnessFactor = 1.20;
+          
+          const adjustedImage = adjustImage(sheet.images[index].img, 660, brightnessFactor);
+          const offset = (size - photoSize) / 2;
+          previewCtx.drawImage(adjustedImage, pos[0] + offset, pos[1] + offset, photoSize, photoSize);
+        }
+      });
+      
+      // Calculate sheet number for display
+      const sheetsWithImages = contactSheets.filter(s => s.images.length > 0);
+      const totalSheets = sheetsWithImages.length;
+      const sheetNum = totalSheets > 1 ? sheetsWithImages.findIndex(s => s === sheet) + 1 : null;
+      
+      const previewFilename = generateFilename(sheet, 0, 1, sheetNum, totalSheets);
+      previewCtx.fillStyle = '#000';
+      previewCtx.font = 'bold 10px Arial';
+      previewCtx.textAlign = 'center';
+      previewCtx.fillText(previewFilename, contactSheetPreview.width / 2, 40);
+    }
+
+    function generateContactSheetPages(sheet, sheetNum = null, totalSheets = 1) {
+      // Returns array of canvas elements, one per page
+      const pages = [];
+      const numImages = sheet.images.length;
+      const imagesPerPage = 9;
+      const numPages = Math.ceil(numImages / imagesPerPage);
+      
+      for (let pageNum = 0; pageNum < numPages; pageNum++) {
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = 2550;
+        pageCanvas.height = 3300;
+        const ctx = pageCanvas.getContext('2d');
+        
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, 2550, 3300);
+        
+        const marginTop = 309.5;
+        const hSpacing = 29.25;
+        const vSpacing = 141.9;
+        const size = 825;
+        const photoSize = 660;
+        const marginSide = (2550 - (3 * size + 2 * hSpacing)) / 2;
+        const positions = [
+          [marginSide, marginTop],
+          [marginSide + size + hSpacing, marginTop],
+          [marginSide + 2 * size + 2 * hSpacing, marginTop],
+          [marginSide, marginTop + size + vSpacing],
+          [marginSide + size + hSpacing, marginTop + size + vSpacing],
+          [marginSide + 2 * size + 2 * hSpacing, marginTop + size + vSpacing],
+          [marginSide, marginTop + 2 * size + 2 * vSpacing],
+          [marginSide + size + hSpacing, marginTop + 2 * size + 2 * vSpacing],
+          [marginSide + 2 * size + 2 * hSpacing, marginTop + 2 * size + 2 * vSpacing]
+        ];
+        
+        const startIdx = pageNum * imagesPerPage;
+        const endIdx = Math.min(startIdx + imagesPerPage, numImages);
+        
+        for (let i = startIdx; i < endIdx; i++) {
+          const posIdx = i - startIdx;
+          const image = sheet.images[i];
+          
+          if (backgroundImage.complete && backgroundImage.src) {
+            ctx.drawImage(backgroundImage, positions[posIdx][0], positions[posIdx][1], size, size);
+          }
+          
+          if (image) {
+            const adj = sheet.individualAdjustments[i];
+            let brightnessFactor = 1.0;
+            if (adj.brightness5) brightnessFactor = 1.05;
+            if (adj.brightness10) brightnessFactor = 1.10;
+            if (adj.brightness15) brightnessFactor = 1.15;
+            if (adj.brightness20) brightnessFactor = 1.20;
+            
+            const adjustedImage = adjustImage(image.img, 660, brightnessFactor);
+            const offset = (size - photoSize) / 2;
+            ctx.drawImage(adjustedImage, positions[posIdx][0] + offset, positions[posIdx][1] + offset, photoSize, photoSize);
+          }
+        }
+        
+        // Add filename to page
+        const filename = generateFilename(sheet, pageNum, numPages, sheetNum, totalSheets);
+        ctx.fillStyle = '#000';
+        ctx.font = 'bold 40px Arial';
+        ctx.textAlign = 'center';
+        const sheetWidth = 2550;
+        const textX = sheetWidth / 2;
+        ctx.fillText(filename, textX, 150);
+        
+        pages.push(pageCanvas);
+      }
+      
+      return pages;
+    }
+
+    function generateFilename(sheet, pageNum = 0, totalPages = 1, sheetNum = null, totalSheets = 1) {
+      const customName = customNameInput.value.trim();
+      
+      let namePart = customName ? `${customName} ` : '';
+      let sheetPart = '';
+      
+      // Add sheet number if there are multiple sheets
+      if (totalSheets > 1 && sheetNum !== null) {
+        sheetPart = ` - Sheet ${sheetNum}`;
+      }
+      
+      let pagePart = totalPages > 1 ? ` page ${pageNum + 1} of ${totalPages}` : '';
+      
+      return `${namePart}Contact Sheet${sheetPart}${pagePart}.png`;
+    }
+
+    function confirmDownload() {
+      downloadContactSheet();
+    }
+
+    async function downloadContactSheet() {
+      saveCurrentSheet();
+      
+      const sheetsWithImages = contactSheets.filter(sheet => sheet.images.length > 0);
+      
+      if (sheetsWithImages.length === 0) {
+        alert('Please add images to at least one contact sheet before downloading.');
+        return;
+      }
+      
+      try {
+        disableButtons();
+        showDownloadNotification();
+        showLoading();
+        
+        // Create ZIP file
+        const zip = new JSZip();
+        const baseFolder = customNameInput.value.trim() || 'customer_images';
+        const topLevelFolder = zip.folder(baseFolder);
+        
+        // Calculate total pages across all sheets
+        let totalSheetPages = 0;
+        sheetsWithImages.forEach(sheet => {
+          totalSheetPages += Math.ceil(sheet.images.length / 9);
+        });
+        
+        // If multiple pages total, create a single PDF with all pages
+        if (totalSheetPages > 1) {
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'px',
+            format: [2550, 3300]
+          });
+          
+          let isFirstPage = true;
+          
+          const totalSheets = sheetsWithImages.length;
+          
+          for (let i = 0; i < sheetsWithImages.length; i++) {
+            const sheet = sheetsWithImages[i];
+            const sheetNum = totalSheets > 1 ? i + 1 : null;
+            const pages = generateContactSheetPages(sheet, sheetNum, totalSheets);
+            
+            for (let pageCanvas of pages) {
+              const imgData = pageCanvas.toDataURL('image/png');
+              
+              if (!isFirstPage) {
+                pdf.addPage([2550, 3300], 'portrait');
+              }
+              pdf.addImage(imgData, 'PNG', 0, 0, 2550, 3300);
+              isFirstPage = false;
+            }
+          }
+          
+          const pdfBlob = pdf.output('blob');
+          const customName = customNameInput.value.trim();
+          const pdfFilename = customName ? `${customName} Contact Sheet.pdf` : 'Contact Sheet.pdf';
+          topLevelFolder.file(pdfFilename, pdfBlob);
+        } else {
+          // Single page - save as PNG
+          const sheet = sheetsWithImages[0];
+          const totalSheets = sheetsWithImages.length;
+          const sheetNum = totalSheets > 1 ? 1 : null;
+          const pages = generateContactSheetPages(sheet, sheetNum, totalSheets);
+          const contactSheetDataURL = pages[0].toDataURL('image/png');
+          const contactSheetBlob = await (await fetch(contactSheetDataURL)).blob();
+          topLevelFolder.file(generateFilename(sheet, 0, 1, sheetNum, totalSheets), contactSheetBlob);
+        }
+        
+        // Add originals folders for each sheet
+        for (let sheetIndex = 0; sheetIndex < sheetsWithImages.length; sheetIndex++) {
+          const sheet = sheetsWithImages[sheetIndex];
+          const suffix = sheetsWithImages.length > 1 ? `_${sheetIndex + 1}` : '';
+          const originalsFolder = topLevelFolder.folder(`Originals${suffix}`);
+          
+          for (let i = 0; i < sheet.images.length; i++) {
+            const filename = `image_${i + 1}.jpg`;
+            const url = sheet.images[i].src;
+            
+            // Try to fetch the image directly
+            try {
+              const response = await fetch(url);
+              if (response.ok) {
+                const blob = await response.blob();
+                originalsFolder.file(filename, blob);
+                continue;
+              }
+            } catch (fetchError) {
+              console.warn(`Fetch failed for image ${i + 1}, trying canvas method`);
+            }
+            
+            // Fallback: try creating blob from loaded image
+            try {
+              const img = sheet.images[i].img;
+              const canvas = document.createElement('canvas');
+              canvas.width = img.width;
+              canvas.height = img.height;
+              const ctx = canvas.getContext('2d');
+              ctx.drawImage(img, 0, 0);
+              const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+              if (blob) {
+                originalsFolder.file(filename, blob);
+              }
+            } catch (canvasError) {
+              console.error(`Could not save original image ${i + 1}:`, canvasError);
+            }
+          }
+        }
+        
+        // Generate and download ZIP
+        const content = await zip.generateAsync({ type: "blob" });
+        saveAs(content, `${baseFolder}.zip`);
+        
+        hideLoading();
+        
+        // Automatically clear all sheets after successful download
+        setTimeout(() => {
+          clearAll();
+        }, 500);
+        
+      } catch (error) {
+        console.error('Error downloading files:', error);
+        alert('Failed to download files. Please check the console for details.');
+        hideLoading();
+        enableButtons();
+      }
+    }
+
+    function clearAll() {
+      contactSheets = [];
+      nextSheetId = 1;
+      initFirstContactSheet();
+      imageUrlInput.value = '';
+      customNameInput.value = '';
+      recommendedCheckbox.checked = false;
+      downloadButton.disabled = true;
+      downloadButton.style.opacity = '1';
+      thumbnailPreview.innerHTML = '';
+      loadDefaultBorderImage();
+      updatePreviews();
+      enableButtons();
+      
+      // Auto-expand the upload section
+      uploadContent.classList.remove('collapsed');
+      uploadArrow.classList.remove('collapsed');
+      
+      // Collapse adjustments section
+      const adjustmentsContent = document.getElementById('individualAdjustmentsContent');
+      const adjustmentsArrow = document.getElementById('individualAdjustmentsArrow');
+      adjustmentsContent.classList.add('collapsed');
+      adjustmentsArrow.classList.add('collapsed');
+    }
+
+    // Initialize everything when the page loads
+    initCanvases();
+    loadDefaultBorderImage();
+    initFirstContactSheet();
+  </script>
+</body>
+</html>
